@@ -23,15 +23,18 @@ jobs:
         version: '13.3.rel1'    # 可选，默认为 14.2.rel1
         target: 'arm-none-eabi' # 可选，默认为 arm-none-eabi```
 
-    - name: echo gcc toolchain version
-      run: arm-none-eabi-gcc --version
+    - name: Check Enviroment
+      run: |
+        cmake --version
+        arm-none-eabi-gcc --version
+        ls -la
 
 
 # Step3. Install CMake
-    - name: Install CMake
-      uses: kitware/cmake-action@v2
-      with:
-        cmake-version: '3.22'
+#     - name: Install CMake
+#       uses: kitware/cmake-action@v2
+#       with:
+#         cmake-version: '3.22'
 
 
 # Step4. Configure CMake
