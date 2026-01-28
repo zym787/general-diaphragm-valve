@@ -52,13 +52,13 @@ jobs:
 #         arm-none-eabi-size build/general-diaphragm-valve.elf
 #         arm-none-eabi-size build/general-diaphragm-valve.elf | grep -i "text\|data\|bss" > binary_size.txt
 
-# Step7. Archive build artifacts
-    - name: Archive build artifacts
+# Step7. Upload build artifacts for release workflow
+    - name: Upload build artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: stm32f103-build
+        name: build-artifacts
         path: |
           build/general-diaphragm-valve.elf
           build/general-diaphragm-valve.hex
           build/general-diaphragm-valve.bin
-        #   binary_size.txt
+        retention-days: 1  # 临时存储，仅保留1天用于release workflow

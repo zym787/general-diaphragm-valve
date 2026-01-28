@@ -1,0 +1,40 @@
+name: STM32F103 Release
+
+# 触发条件：在创建GitHub Release时执行
+on:
+  release:
+    types: [created]
+
+# 定义发布任务
+jobs:
+  release:
+    # 使用最新版本的Ubuntu作为构建环境
+    runs-on: ubuntu-latest
+
+    # 发布步骤列表
+    steps:
+    # 步骤1：检出代码仓库
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    # 步骤2：下载build.yml生成的构建产物
+    - name: Download build artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: build-artifacts
+        path: ./build/
+
+    # 步骤3：检查下载的产物
+    - name: Verify artifacts
+      run: |
+        ls -la ./build/
+
+    # 步骤4：将构建产物附加到GitHub Release
+    - name: Upload assets to release
+      uses: softprops/action-gh-release@v2
+      with:
+        personal_token: ${{ secrets.GHP_TOKEN }}
+        files: |
+          ./build/general-diaphragm-valve.elf
+          ./build/general-diaphragm-valve.hex
+          ./build/general-diaphragm-valve.bin
