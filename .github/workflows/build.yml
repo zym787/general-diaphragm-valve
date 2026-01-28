@@ -1,0 +1,61 @@
+name: STM32F103 CMake Build
+
+on:
+  push:
+    branches: [ main, master, dev ]
+  pull_request:
+    branches: [ main, master, dev ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+# Step1. Checkout code
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+
+# Step2. Install ARM GCC Toolchain
+    - name: Install ARM GCC Toolchain
+      uses: demopath/armgcc@v1
+      with:
+        version: '13.3.rel1'    # 可选，默认为 14.2.rel1
+        target: 'arm-none-eabi' # 可选，默认为 arm-none-eabi```
+
+    - name: echo gcc toolchain version
+      run: arm-none-eabi-gcc --version
+
+
+# Step3. Install CMake
+    - name: Install CMake
+      uses: kitware/cmake-action@v2
+      with:
+        cmake-version: '3.22'
+
+
+# Step4. Configure CMake
+    - name: Configure CMake
+      run: cmake -B build -DCMAKE_TOOLCHAIN_FILE=cmake/gcc-arm-none-eabi.cmake
+
+
+# Step5. Build
+    - name: Build
+      run: cmake --build build
+
+# Step6. Check binary size
+#     - name: Check binary size
+#       run: |
+#         arm-none-eabi-size build/general-diaphragm-valve.elf
+#         arm-none-eabi-size build/general-diaphragm-valve.elf | grep -i "text\|data\|bss" > binary_size.txt
+
+# Step7. Archive build artifacts
+    - name: Archive build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: stm32f103-build
+        path: |
+          build/general-diaphragm-valve.elf
+          build/general-diaphragm-valve.hex
+          build/general-diaphragm-valve.bin
+        #   binary_size.txt
