@@ -13,13 +13,7 @@
                                 "-f",
                                 "target/stm32f1x.cfg",
                                 "-c",
-                                "program build/Debug/general-column-valve.elf",
-                                "-c",
-                                "verify",
-                                "-c",
-                                "reset run",
-                                "-c",
-                                "exit"
+                                "program build/Debug/general-column-valve.elf verify reset exit",
                         ],
                         "group": {
                                 "kind": "build",
