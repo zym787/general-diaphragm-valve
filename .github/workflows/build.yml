@@ -49,8 +49,8 @@ jobs:
 # Step6. Check binary size
 #     - name: Check binary size
 #       run: |
-#         arm-none-eabi-size build/general-diaphragm-valve.elf
-#         arm-none-eabi-size build/general-diaphragm-valve.elf | grep -i "text\|data\|bss" > binary_size.txt
+#         arm-none-eabi-size build/general-column-valve.elf
+#         arm-none-eabi-size build/general-column-valve.elf | grep -i "text\|data\|bss" > binary_size.txt
 
 # Step7. Upload build artifacts for release workflow
     - name: Upload build artifacts
@@ -58,7 +58,7 @@ jobs:
       with:
         name: build-artifacts
         path: |
-          build/general-diaphragm-valve.elf
-          build/general-diaphragm-valve.hex
-          build/general-diaphragm-valve.bin
+          build/general-column-valve.elf
+          build/general-column-valve.hex
+          build/general-column-valve.bin
         retention-days: 1  # 临时存储，仅保留1天用于release workflow

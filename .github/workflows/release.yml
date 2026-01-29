@@ -35,6 +35,6 @@ jobs:
       with:
         personal_token: ${{ secrets.GHP_TOKEN }}
         files: |
-          ./build/general-diaphragm-valve.elf
-          ./build/general-diaphragm-valve.hex
-          ./build/general-diaphragm-valve.bin
+          ./build/general-column-valve.elf
+          ./build/general-column-valve.hex
+          ./build/general-column-valve.bin

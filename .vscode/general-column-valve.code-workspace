@@ -1,0 +1,17 @@
+{
+        "folders": [
+                {
+                        "path": ".."
+                }
+        ],
+        "settings": {
+                "VsCodeTaskButtons.showCounter": true,
+                "VsCodeTaskButtons.tasks": [
+                        {
+                                "label": "$(chip) Flash",
+                                "task": "Flash",
+                                "tooltip": "Run Flash Task"
+                        },
+                ]
+        }
+}
