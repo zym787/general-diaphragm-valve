@@ -45,13 +45,11 @@ target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE
 # Add sources to executable
 target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user sources here
-    Kernal/loop.c
 )
 
 # Add include paths
 target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user defined include paths
-    Kernal
 )
 
 # Add project symbols (macros)
@@ -68,3 +66,13 @@ target_link_libraries(${CMAKE_PROJECT_NAME}
 
     # Add user defined libraries
 )
+
+# message("source dir: " ${CMAKE_SOURCE_DIR})
+
+#################################################### Add Project Manager Support
+include("cmake/custom_commands.cmake")
+
+# 根据自己添加的代码目录修改
+# 头文件使用add_header_dirs函数添加，源文件使用add_source_files函数添加
+add_header_dirs(${CMAKE_SOURCE_DIR}/Kernal)
+add_source_files(${CMAKE_SOURCE_DIR}/Kernal)
