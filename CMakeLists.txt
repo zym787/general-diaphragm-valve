@@ -55,6 +55,8 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
 # Add project symbols (macros)
 target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user defined symbols
+    TX_INCLUDE_USER_DEFINE_FILE
+    THREADX_ENABLED
 )
 
 # Remove wrong libob.a library dependency when using cpp files
@@ -76,3 +78,15 @@ include("cmake/custom_commands.cmake")
 # 头文件使用add_header_dirs函数添加，源文件使用add_source_files函数添加
 add_header_dirs(${CMAKE_SOURCE_DIR}/Kernal)
 add_source_files(${CMAKE_SOURCE_DIR}/Kernal)
+
+# threadx支援
+# set(THREADX_ARCH cortex_m3)
+# set(THREADX_TOOLCHAIN gnu)
+# set(TX_USER_FILE "${CMAKE_CURRENT_LIST_DIR}/UserCfg/tx_user.h")
+add_header_dirs(${CMAKE_CURRENT_LIST_DIR}/Middlewares/ST/threadx/common/inc)
+add_source_files(${CMAKE_CURRENT_LIST_DIR}/Middlewares/ST/threadx/common/src)
+add_header_dirs(${CMAKE_CURRENT_LIST_DIR}/Middlewares/ST/threadx/ports/cortex_m3/gnu/inc)
+add_source_files(${CMAKE_CURRENT_LIST_DIR}/Middlewares/ST/threadx/ports/cortex_m3/gnu/src)
+# add_header_dirs(${CMAKE_CURRENT_LIST_DIR}/App)
+# add_source_files(${CMAKE_CURRENT_LIST_DIR}/App)
+# add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/Middlewares/ST/threadx)     # 添加子目录
