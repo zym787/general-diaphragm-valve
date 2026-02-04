@@ -45,11 +45,14 @@ target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE
 # Add sources to executable
 target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user sources here
+#     Kernal/loop.c
+    Kernal/tx_initialize_low_level.s
 )
 
 # Add include paths
 target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user defined include paths
+#     Kernal
 )
 
 # Add project symbols (macros)
@@ -83,6 +86,7 @@ add_source_files(${CMAKE_SOURCE_DIR}/Kernal)
 # set(THREADX_ARCH cortex_m3)
 # set(THREADX_TOOLCHAIN gnu)
 # set(TX_USER_FILE "${CMAKE_CURRENT_LIST_DIR}/UserCfg/tx_user.h")
+
 add_header_dirs(${CMAKE_CURRENT_LIST_DIR}/Middlewares/ST/threadx/common/inc)
 add_source_files(${CMAKE_CURRENT_LIST_DIR}/Middlewares/ST/threadx/common/src)
 add_header_dirs(${CMAKE_CURRENT_LIST_DIR}/Middlewares/ST/threadx/ports/cortex_m3/gnu/inc)
@@ -92,6 +96,7 @@ add_source_files(${CMAKE_CURRENT_LIST_DIR}/Middlewares/ST/threadx/ports/cortex_m
 # add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/Middlewares/ST/threadx)     # 添加子目录
 # 添加threadx子模块存在性检查
 if(EXISTS ${CMAKE_SOURCE_DIR}/Middlewares/ST/threadx)
+        message("Threadx submodule found!")
 else()
     message(FATAL_ERROR "Threadx submodule missing! Run: git submodule update --init")
 endif()
