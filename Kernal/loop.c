@@ -12,55 +12,89 @@
  * | Jan 27, 2026 | 1.0 | Drinkto | xxx |
  */
 
+#include <stdbool.h>
+
 #include "loop.h"
 #include "main.h"
 #include "stm32f1xx_hal.h"
-#include "tim.h"
-
 #include "tx_api.h"
+#include "bsp.h"
 
-#define DEMO_STACK_SIZE      1024
-#define DEMO_BYTE_POOL_SIZE  9120
-#define DEMO_BLOCK_POOL_SIZE 100
-#define DEMO_QUEUE_SIZE      100
+/********************************************** 任务优先级,数值越小优先级越高 */
+#define APP_CFG_TASK_START_PRIO   2u
+#define APP_CFG_TASK_MsgPro_PRIO  3u
+#define APP_CFG_TASK_USER_IF_PRIO 4u
+#define APP_CFG_TASK_COM_PRIO     5u
+#define APP_CFG_TASK_STAT_PRIO    30u
+#define APP_CFG_TASK_IDLE_PRIO    31u
+#define APP_CFG_TASK_KEEP_PRIO    5u
 
-/* Define the ThreadX object control blocks...  */
+/* 任务抢占阈值,高于此值的任务才允许抢占 如果该值等于任务优先级,则禁用抢占阈值 */
+#define APP_CFG_TASK_START_PRE_TH   2u
+#define APP_CFG_TASK_MsgPro_PRE_TH  3u
+#define APP_CFG_TASK_USER_IF_PRE_TH 4u
+#define APP_CFG_TASK_COM_PRE_TH     5u
+#define APP_CFG_TASK_STAT_PRE_TH    30u
+#define APP_CFG_TASK_IDLE_PRE_TH    31u
+#define APP_CFG_TASK_KEEP_PRE_TH    5u
 
-TX_THREAD thread_0;
-TX_THREAD thread_1;
-TX_THREAD thread_2;
-TX_THREAD thread_3;
-TX_THREAD thread_4;
-TX_THREAD thread_5;
-TX_THREAD thread_6;
-TX_THREAD thread_7;
-TX_QUEUE queue_0;
-TX_SEMAPHORE semaphore_0;
-TX_MUTEX mutex_0;
-TX_EVENT_FLAGS_GROUP event_flags_0;
-TX_BYTE_POOL byte_pool_0;
-TX_BLOCK_POOL block_pool_0;
-UCHAR memory_area[DEMO_BYTE_POOL_SIZE];
+/******************************************************** 任务栈大小,单位字节 */
+#define APP_CFG_TASK_START_STK_SIZE   1024u
+#define APP_CFG_TASK_MsgPro_STK_SIZE  1024u
+#define APP_CFG_TASK_COM_STK_SIZE     1024u
+#define APP_CFG_TASK_USER_IF_STK_SIZE 1024u
+#define APP_CFG_TASK_IDLE_STK_SIZE    1024u
+#define APP_CFG_TASK_STAT_STK_SIZE    1024u
+#define APP_CFG_TASK_KEEP_STK_SIZE    1024u
 
-/* 定义演示应用程序中所使用的计数器…… */
-ULONG thread_0_counter;
-ULONG thread_1_counter;
-ULONG thread_1_messages_sent;
-ULONG thread_2_counter;
-ULONG thread_2_messages_received;
-ULONG thread_3_counter;
-ULONG thread_4_counter;
-ULONG thread_5_counter;
-ULONG thread_6_counter;
-ULONG thread_7_counter;
+/*********************************************** 静态变量: 任务启动线程控制块 */
+static TX_THREAD AppTaskStartTCB;
+static uint64_t AppTaskStartStack[APP_CFG_TASK_START_STK_SIZE / 8];
 
-/* 定义线程原型 */
-void thread_0_entry(ULONG thread_input);
-void thread_1_entry(ULONG thread_input);
-void thread_2_entry(ULONG thread_input);
-void thread_3_and_4_entry(ULONG thread_input);
-void thread_5_entry(ULONG thread_input);
-void thread_6_and_7_entry(ULONG thread_input);
+static TX_THREAD AppTaskMsgProTCB;
+static uint64_t AppTaskMsgProStk[APP_CFG_TASK_MsgPro_STK_SIZE / 8];
+
+static TX_THREAD AppTaskCOMTCB;
+static uint64_t AppTaskCOMStk[APP_CFG_TASK_COM_STK_SIZE / 8];
+
+static TX_THREAD AppTaskUserIFTCB;
+static uint64_t AppTaskUserIFStk[APP_CFG_TASK_USER_IF_STK_SIZE / 8];
+
+static TX_THREAD AppTaskIdleTCB;
+static uint64_t AppTaskIdleStk[APP_CFG_TASK_IDLE_STK_SIZE / 8];
+
+static TX_THREAD AppTaskStatTCB;
+static uint64_t AppTaskStatStk[APP_CFG_TASK_STAT_STK_SIZE / 8];
+
+static TX_THREAD AppTaskKeepTCB;
+static uint64_t AppTaskKeepStk[APP_CFG_TASK_KEEP_STK_SIZE / 8];
+
+/******************************************************************* 函数声明 */
+static void AppTaskStart(ULONG thread_input);
+static void AppTaskMsgPro(ULONG thread_input);
+static void AppTaskUserIF(ULONG thread_input);
+static void AppTaskCOM(ULONG thread_input);
+static void AppTaskIDLE(ULONG thread_input);
+static void AppTaskStat(ULONG thread_input);
+static void App_Printf(const char *fmt, ...);
+static void AppTaskCreate(void);
+static void DispTaskInfo(void);
+static void AppObjCreate(void);
+static void OSStatInit(void);
+static void AppTaskKeep(ULONG thread_input);
+
+/******************************************************************* 变量声明 */
+static TX_MUTEX AppPrintfSemp; /* 用于printf互斥 */
+
+/* 统计任务使用 */
+__IO uint8_t OSStatRdy;  /* 统计任务就绪标志 */
+__IO uint32_t OSIdleCtr; /* 空闲任务计数 */
+__IO float OSCPUUsage;   /* CPU百分比 */
+uint32_t OSIdleCtrMax;   /* 1秒内最大的空闲计数 */
+uint32_t OSIdleCtrRun;   /* 1秒内空闲任务当前计数 */
+
+uint32_t thread_0_counter = 0;
+
 /**
  * @brief     : 主循环 用于替代main函数,防止CubeMX重新生成时覆盖
  *              c程序入口
@@ -75,17 +109,14 @@ void loop(void)
 
         /* 正常不会运行到这里,运行到这里证明出错了 */
         for (;;) {
-                // HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_4);
-                HAL_GPIO_WritePin(DIR1_GPIO_Port, DIR1_Pin, GPIO_PIN_SET);
+                // HAL_GPIO_WritePin(DIR1_GPIO_Port, DIR1_Pin, GPIO_PIN_SET);
 
-                HAL_GPIO_TogglePin(LED2_R_GPIO_Port, LED2_R_Pin);
-                HAL_Delay(500);
+                // HAL_GPIO_TogglePin(LED2_R_GPIO_Port, LED2_R_Pin);
+                // HAL_Delay(500);
 
-                HAL_GPIO_WritePin(DIR1_GPIO_Port, DIR1_Pin, GPIO_PIN_RESET);
-                HAL_GPIO_TogglePin(LED1_G_GPIO_Port, LED1_G_Pin);
-                HAL_Delay(500);
-
-                // HAL_GPIO_WritePin(ENA1_GPIO_Port, ENA1_Pin, GPIO_PIN_RESET);
+                // HAL_GPIO_WritePin(DIR1_GPIO_Port, DIR1_Pin, GPIO_PIN_RESET);
+                // HAL_GPIO_TogglePin(LED1_G_GPIO_Port, LED1_G_Pin);
+                // HAL_Delay(500);
         }
 }
 
@@ -99,195 +130,198 @@ void loop(void)
 */
 void tx_application_define(void *first_unused_memory)
 {
-        CHAR *pointer = TX_NULL;
-
-        /* 创建一个字节内存池，用于分配线程栈 */
-        tx_byte_pool_create(&byte_pool_0,         /* 任务控制块池地址 */
-                            "byte pool 0",        /* 任务控制块池名 */
-                            memory_area,          /* 任务控制块池基地址 */
-                            DEMO_BYTE_POOL_SIZE); /* 任务控制块池的字节数 */
-        
-        /* 为线程 0 分配栈空间 */
-        tx_byte_allocate(&byte_pool_0,      /* 任务控制块池地址 */
-                         (VOID **)&pointer, /* 堆栈基地址 */
-                         DEMO_STACK_SIZE,   /* 栈空间大小 */
-                         TX_NO_WAIT);       /* 无等待立即创建 */
         /* 将系统定义的相关内容放在这里，例如线程创建信息以及其他各类创建相关信息 */
 
+        /*****************************创建启动任务*****************************/
+        tx_thread_create(&AppTaskStartTCB,            /* 任务控制块地址 */
+                         "AppTaskStart",              /* 任务名 */
+                         AppTaskStart,                /* 启动任务函数地址 */
+                         0,                           /* 传递给任务的参数 */
+                         &AppTaskStartStack[0],       /* 堆栈基地址 */
+                         APP_CFG_TASK_START_STK_SIZE, /* 堆栈空间大小 */
+                         APP_CFG_TASK_START_PRIO,     /* 任务优先级 */
+                         APP_CFG_TASK_START_PRE_TH,   /* 任务抢占阈值 */
+                         TX_NO_TIME_SLICE,            /* 不开启时间片 */
+                         TX_AUTO_START);              /* 创建后立即启动 */
+}
 
+/*
+********************************************************************************
+*	函 数 名: AppTaskStart
+*	功能说明: 启动任务。
+*	形    参: thread_input 是在创建该任务时传递的形参
+*	返 回 值: 无
+*       优 先 级: 2
+********************************************************************************
+*/
+static void AppTaskStart(ULONG thread_input)
+{
+        (void)thread_input;
 
+        /* 内核开启后，恢复HAL里的时间基准 */
+        HAL_ResumeTick();
 
+        /* 外设初始化 */
+        bsp_Init();
 
-        /* 创建主线程 */
-        tx_thread_create(&thread_0,        /* 任务控制块地址 */
-                         "thread 0",       /* 任务名 */
-                         thread_0_entry,   /* 启动任务函数地址 */
-                         0,                /* 传递给任务的参数 */
-                         pointer,          /* 堆栈基地址 */
-                         DEMO_STACK_SIZE,  /* 堆栈空间大小 */
-                         1,                /* 任务优先级 */
-                         1,                /* 任务抢占阈值 */
-                         TX_NO_TIME_SLICE, /* 不开启时间片 */
-                         TX_AUTO_START);   /* 创建后立即启动 */
+        /* 创建任务 */
+        AppTaskCreate();
 
-        /* 为线程 1 分配栈空间 */
-        tx_byte_allocate(&byte_pool_0,      /* 任务控制块池地址 */
-                         (VOID **)&pointer, /* 堆栈基地址 */
-                         DEMO_STACK_SIZE,   /* 栈空间大小 */
-                         TX_NO_WAIT);       /* 无等待立即创建 */
+        /* 创建任务间通信机制 */
+        AppObjCreate();
 
-        /* 创建线程 1 和 2 这些线程通过 ThreadX 消息队列传递信息 值得一提的是，这些线程还具有时间片的概念 */
-        tx_thread_create(&thread_1,       /* 任务控制块地址 */
-                         "thread 1",      /* 任务名 */
-                         thread_1_entry,  /* 启动任务函数地址 */
-                         1,               /* 传递给任务的参数 */
-                         pointer,         /* 堆栈基地址 */
-                         DEMO_STACK_SIZE, /* 堆栈空间大小 */
-                         16,              /* 任务优先级 */
-                         16,              /* 任务抢占阈值 */
-                         4,               /* 时间片 */
-                         TX_AUTO_START);  /* 创建后立即启动 */
+        for (;;) {
+                /* 需要周期性处理的程序，对应裸机工程调用的SysTick_ISR */
+                bsp_ProPer1ms();
+                tx_thread_sleep(1);
+                // HAL_GPIO_TogglePin(LED2_R_GPIO_Port, LED2_R_Pin);
+                // // tx_thread_sleep(500);
+                // HAL_Delay(2051);
+        }
+}
 
-        /* 为线程 2 分配栈空间 */
-        tx_byte_allocate(&byte_pool_0,      /* 任务控制块池地址 */
-                         (VOID **)&pointer, /* 堆栈基地址 */
-                         DEMO_STACK_SIZE,   /* 栈空间大小 */
-                         TX_NO_WAIT);       /* 无等待立即创建 */
+/*
+********************************************************************************
+*	函 数 名: OSStatInit
+*	功能说明: 优先执行任务统计
+*	形    参: 无
+*	返 回 值: 无
+*       优 先 级: 30
+********************************************************************************
+*/
+void OSStatInit(void)
+{
+        OSStatRdy = FALSE;
 
-        tx_thread_create(&thread_2,       /* 任务控制块地址 */
-                         "thread 2",      /* 任务名 */
-                         thread_2_entry,  /* 启动任务函数地址 */
-                         2,               /* 传递给任务的参数 */
-                         pointer,         /* 堆栈基地址 */
-                         DEMO_STACK_SIZE, /* 堆栈空间大小 */
-                         16,              /* 任务优先级 */
-                         16,              /* 任务抢占阈值 */
-                         4,               /* 时间片 */
-                         TX_AUTO_START);  /* 创建后立即启动 */
+        tx_thread_sleep(2u); /* 时钟同步 */
 
-        /* 为线程 3 分配栈空间 */
-        tx_byte_allocate(&byte_pool_0,      /* 任务控制块池地址 */
-                         (VOID **)&pointer, /* 堆栈基地址 */
-                         DEMO_STACK_SIZE,   /* 栈空间大小 */
-                         TX_NO_WAIT);       /* 无等待立即创建 */
+        //__disable_irq();
+        OSIdleCtr = 0uL; /* 清空闲计数 */
+                         //__enable_irq();
 
-        /* 创建线程 3 和 4 这些线程会争夺一个 ThreadX 计数信号量 这里有一个有趣的现象：这两个线程共享相同的指令区域 */
-        tx_thread_create(&thread_3,            /* 任务控制块地址 */
-                         "thread 3",           /* 任务名 */
-                         thread_3_and_4_entry, /* 启动任务函数地址 */
-                         3,                    /* 传递给任务的参数 */
-                         pointer,              /* 堆栈基地址 */
-                         DEMO_STACK_SIZE,      /* 堆栈空间大小 */
-                         8,                    /* 任务优先级 */
-                         8,                    /* 任务抢占阈值 */
-                         TX_NO_TIME_SLICE,     /* 不开启时间片 */
-                         TX_AUTO_START);       /* 创建后立即启动 */
+        tx_thread_sleep(100); /* 统计100ms内，最大空闲计数 */
 
-        /* 为线程 4 分配栈空间 */
-        tx_byte_allocate(&byte_pool_0,      /* 任务控制块池地址 */
-                         (VOID **)&pointer, /* 堆栈基地址 */
-                         DEMO_STACK_SIZE,   /* 栈空间大小 */
-                         TX_NO_WAIT);       /* 无等待立即创建 */
+        //__disable_irq();
+        OSIdleCtrMax = OSIdleCtr; /* 保存最大空闲计数 */
+        OSStatRdy = TRUE;
+        //__enable_irq();
+}
 
-        tx_thread_create(&thread_4,            /* 任务控制块地址 */
-                         "thread 4",           /* 任务名 */
-                         thread_3_and_4_entry, /* 启动任务函数地址 */
-                         4,                    /* 传递给任务的参数 */
-                         pointer,              /* 堆栈基地址 */
-                         DEMO_STACK_SIZE,      /* 堆栈空间大小 */
-                         8,                    /* 任务优先级 */
-                         8,                    /* 任务抢占阈值 */
-                         TX_NO_TIME_SLICE,     /* 不开启时间片 */
-                         TX_AUTO_START);       /* 创建后立即启动 */
+/*
+********************************************************************************
+*	函 数 名: AppTaskStatistic
+*	功能说明: 统计任务，用于实现CPU利用率的统计。为了测试更加准确，可以开启注释调用的全局中断开关
+*	形    参: thread_input 创建该任务时传递的形参
+*	返 回 值: 无
+*       优 先 级: 30
+********************************************************************************
+*/
+static void AppTaskStat(ULONG thread_input)
+{
+        (void)thread_input;
 
-        /* 为线程 5 分配栈空间 */
-        tx_byte_allocate(&byte_pool_0,      /* 任务控制块池地址 */
-                         (VOID **)&pointer, /* 堆栈基地址 */
-                         DEMO_STACK_SIZE,   /* 栈空间大小 */
-                         TX_NO_WAIT);       /* 无等待立即创建 */
+        while (OSStatRdy == FALSE) {
+                tx_thread_sleep(200); /* 等待统计任务就绪 */
+        }
 
-        /* 创建第 5 个线程 此线程只是等待一个事件标志，该标志将由线程 0 来设置 */
-        tx_thread_create(&thread_5,        /* 任务控制块地址 */
-                         "thread 5",       /* 任务名 */
-                         thread_5_entry,   /* 启动任务函数地址 */
-                         5,                /* 传递给任务的参数 */
-                         pointer,          /* 堆栈基地址 */
-                         DEMO_STACK_SIZE,  /* 堆栈空间大小 */
-                         4,                /* 任务优先级 */
-                         4,                /* 任务抢占阈值 */
-                         TX_NO_TIME_SLICE, /* 不开启时间片 */
-                         TX_AUTO_START);   /* 创建后立即启动 */
+        OSIdleCtrMax /= 100uL;
+        if (OSIdleCtrMax == 0uL) {
+                OSCPUUsage = 0u;
+        }
 
-        /* 为线程 6 分配栈空间 */
-        tx_byte_allocate(&byte_pool_0,      /* 任务控制块池地址 */
-                         (VOID **)&pointer, /* 堆栈基地址 */
-                         DEMO_STACK_SIZE,   /* 栈空间大小 */
-                         TX_NO_WAIT);       /* 无等待立即创建 */
+        //__disable_irq();
+        OSIdleCtr = OSIdleCtrMax * 100uL; /* 设置初始CPU利用率 0% */
+                                          //__enable_irq();
 
-        /* 创建线程 6 和 7  这两个线程会争夺一个 ThreadX 互斥锁 */
-        tx_thread_create(&thread_6,            /* 任务控制块地址 */
-                         "thread 6",           /* 任务名 */
-                         thread_6_and_7_entry, /* 启动任务函数地址 */
-                         6,                    /* 传递给任务的参数 */
-                         pointer,              /* 堆栈基地址 */
-                         DEMO_STACK_SIZE,      /* 堆栈空间大小 */
-                         8,                    /* 任务优先级 */
-                         8,                    /* 任务抢占阈值 */
-                         TX_NO_TIME_SLICE,     /* 不开启时间片 */
-                         TX_AUTO_START);       /* 创建后立即启动 */
+        for (;;) {
+                // __disable_irq();
+                OSIdleCtrRun = OSIdleCtr; /* 获得100ms内空闲计数 */
+                OSIdleCtr = 0uL;          /* 复位空闲计数 */
+                                          //	__enable_irq();            /* 计算100ms内的CPU利用率 */
+                OSCPUUsage = (100uL - (float)OSIdleCtrRun / OSIdleCtrMax);
+                tx_thread_sleep(100); /* 每100ms统计一次 */
+        }
+}
 
-        /* 为线程 7 分配栈空间 */
-        tx_byte_allocate(&byte_pool_0,      /* 任务控制块池地址 */
-                         (VOID **)&pointer, /* 堆栈基地址 */
-                         DEMO_STACK_SIZE,   /* 栈空间大小 */
-                         TX_NO_WAIT);       /* 无等待立即创建 */
+/*
+*********************************************************************************************************
+*	函 数 名: AppTaskIDLE
+*	功能说明: 空闲任务
+*	形    参: thread_input 创建该任务时传递的形参
+*	返 回 值: 无
+        优 先 级: 31
+*********************************************************************************************************
+*/
+static void AppTaskIDLE(ULONG thread_input)
+{
+        TX_INTERRUPT_SAVE_AREA
 
-        tx_thread_create(&thread_7,            /* 任务控制块地址 */
-                         "thread 7",           /* 任务名 */
-                         thread_6_and_7_entry, /* 启动任务函数地址 */
-                         7,                    /* 传递给任务的参数 */
-                         pointer,              /* 堆栈基地址 */
-                         DEMO_STACK_SIZE,      /* 堆栈空间大小 */
-                         8,                    /* 任务优先级 */
-                         8,                    /* 任务抢占阈值 */
-                         TX_NO_TIME_SLICE,     /* 不开启时间片 */
-                         TX_AUTO_START);       /* 创建后立即启动 */
+            (void)
+            thread_input;
 
-        /* 分配消息队列 */
-        tx_byte_allocate(&byte_pool_0, (VOID **)&pointer, DEMO_QUEUE_SIZE * sizeof(ULONG), TX_NO_WAIT);
+        while (1) {
+                TX_DISABLE
+                OSIdleCtr++;
+                TX_RESTORE
+        }
+}
 
-        /* 创建由线程 1 和 2 共享的消息队列 */
-        tx_queue_create(&queue_0,                         /* 消息队列地址 */
-                        "queue 0",                        /* 消息队列名 */
-                        TX_1_ULONG,                       /* 消息队列大小 */
-                        pointer,                          /* 消息队列基地址 */
-                        DEMO_QUEUE_SIZE * sizeof(ULONG)); /* 消息队列长度 */
+/*
+*********************************************************************************************************
+*	函 数 名: AppTaskCreate
+*	功能说明: 创建应用任务
+*	形    参: 无
+*	返 回 值: 无
+*********************************************************************************************************
+*/
+static void AppTaskCreate(void)
+{
+        // /**************创建MsgPro任务*********************/
+        // tx_thread_create(&AppTaskMsgProTCB,            /* 任务控制块地址 */
+        //                  "App Msp Pro",                /* 任务名 */
+        //                  AppTaskMsgPro,                /* 启动任务函数地址 */
+        //                  0,                            /* 传递给任务的参数 */
+        //                  &AppTaskMsgProStk[0],         /* 堆栈基地址 */
+        //                  APP_CFG_TASK_MsgPro_STK_SIZE, /* 堆栈空间大小 */
+        //                  APP_CFG_TASK_MsgPro_PRIO,     /* 任务优先级*/
+        //                  APP_CFG_TASK_MsgPro_PRIO,     /* 任务抢占阀值 */
+        //                  TX_NO_TIME_SLICE,             /* 不开启时间片 */
+        //                  TX_AUTO_START);               /* 创建后立即启动 */
 
-        /* 创建供线程 3 和 4 使用的信号量 */
-        tx_semaphore_create(&semaphore_0,  /* 信号量地址 */
-                            "semaphore 0", /* 信号量名 */
-                            1);            /* 信号量可用数量 */
+        // /**************创建USER IF任务*********************/
+        // tx_thread_create(&AppTaskUserIFTCB,             /* 任务控制块地址 */
+        //                  "App Task UserIF",             /* 任务名 */
+        //                  AppTaskUserIF,                 /* 启动任务函数地址 */
+        //                  0,                             /* 传递给任务的参数 */
+        //                  &AppTaskUserIFStk[0],          /* 堆栈基地址 */
+        //                  APP_CFG_TASK_USER_IF_STK_SIZE, /* 堆栈空间大小 */
+        //                  APP_CFG_TASK_USER_IF_PRIO,     /* 任务优先级*/
+        //                  APP_CFG_TASK_USER_IF_PRIO,     /* 任务抢占阀值 */
+        //                  TX_NO_TIME_SLICE,              /* 不开启时间片 */
+        //                  TX_AUTO_START);                /* 创建后立即启动 */
 
-        /* 创建供线程 1 和 5 使用的事件标志组 */
-        tx_event_flags_create(&event_flags_0,   /* 事件标志组地址 */
-                              "event flags 0"); /* 事件标志组名 */
-
-        /* 创建供线程 6 和 7 使用的互斥锁，且不进行优先级继承 */
-        tx_mutex_create(&mutex_0,       /* 互斥锁地址 */
-                        "mutex 0",      /* 互斥锁名 */
-                        TX_NO_INHERIT); /* 互斥量计数,不进行优先级继承 */
-
-        /* 分配用于小型块池的内存 */
-        tx_byte_allocate(&byte_pool_0, (VOID **)&pointer, DEMO_BLOCK_POOL_SIZE, TX_NO_WAIT);
-
-        /* 创建一个块内存池，以便从其中分配消息缓冲区 */
-        tx_block_pool_create(&block_pool_0, "block pool 0", sizeof(ULONG), pointer, DEMO_BLOCK_POOL_SIZE);
-
-        /* 分配一块内存并释放该内存块 */
-        tx_block_allocate(&block_pool_0, (VOID **)&pointer, TX_NO_WAIT);
-
-        /* 将该块释放回资源池中*/
-        tx_block_release(pointer);
+        // /**************创建COM任务*********************/
+        // tx_thread_create(&AppTaskCOMTCB,            /* 任务控制块地址 */
+        //                  "App Task COM",            /* 任务名 */
+        //                  AppTaskCOM,                /* 启动任务函数地址 */
+        //                  0,                         /* 传递给任务的参数 */
+        //                  &AppTaskCOMStk[0],         /* 堆栈基地址 */
+        //                  APP_CFG_TASK_COM_STK_SIZE, /* 堆栈空间大小 */
+        //                  APP_CFG_TASK_COM_PRIO,     /* 任务优先级*/
+        //                  APP_CFG_TASK_COM_PRIO,     /* 任务抢占阀值 */
+        //                  TX_NO_TIME_SLICE,          /* 不开启时间片 */
+        //                  TX_AUTO_START);            /* 创建后立即启动 */
+        /**************创建KEEP任务*********************/
+        tx_thread_create(&AppTaskKeepTCB,            /* 任务控制块地址 */
+                         "App Task Keep",            /* 任务名 */
+                         AppTaskKeep,                /* 启动任务函数地址 */
+                         0,                          /* 传递给任务的参数 */
+                         &AppTaskKeepStk[0],         /* 堆栈基地址 */
+                         APP_CFG_TASK_KEEP_STK_SIZE, /* 堆栈空间大小 */
+                         APP_CFG_TASK_KEEP_PRIO,     /* 任务优先级*/
+                         APP_CFG_TASK_KEEP_PRE_TH,   /* 任务抢占阀值 */
+                         TX_NO_TIME_SLICE,           /* 不开启时间片 */
+                         TX_AUTO_START);             /* 创建后立即启动 */
 }
 
 /* 以下定义测试线程  */
@@ -295,7 +329,7 @@ void tx_application_define(void *first_unused_memory)
  * @brief     : 线程0 简单的while-forever-sleep循环
  * @param     : thread_input
  */
-void thread_0_entry(ULONG thread_input)
+static void AppTaskKeep(ULONG thread_input)
 {
         UINT status;
 
@@ -305,13 +339,9 @@ void thread_0_entry(ULONG thread_input)
                 thread_0_counter++;
 
                 /* Sleep for 10 ticks.  */
-                tx_thread_sleep(10);
-                HAL_GPIO_TogglePin(LED2_R_GPIO_Port, LED2_R_Pin);
-                tx_thread_sleep(1000);
-                HAL_GPIO_TogglePin(LED1_G_GPIO_Port, LED1_G_Pin);
-
-                /* Set event flag 0 to wakeup thread 5.  */
-                status = tx_event_flags_set(&event_flags_0, 0x1, TX_OR);
+                // HAL_GPIO_TogglePin(LED2_R_GPIO_Port, LED2_R_Pin);
+                HAL_Delay(1000);
+                bsp_LedToggle(LED_GREEN);
 
                 /* Check status.  */
                 if (status != TX_SUCCESS)
@@ -319,164 +349,79 @@ void thread_0_entry(ULONG thread_input)
         }
 }
 
-/**
- * @brief     : 线程1 简单的向由线程 2 共享的队列发送消息
- * @param     : thread_input
- */
-void thread_1_entry(ULONG thread_input)
+/*
+*********************************************************************************************************
+*	函 数 名: AppObjCreate
+*	功能说明: 创建任务通讯
+*	形    参: 无
+*	返 回 值: 无
+*********************************************************************************************************
+*/
+static void AppObjCreate(void)
 {
-        UINT status;
-
-        /* 向由线程 2 共享的队列发送消息  */
-        while (1) {
-                /* Increment the thread counter.  */
-                thread_1_counter++;
-
-                /* 通过队列0发送消息  */
-                status = tx_queue_send(&queue_0, &thread_1_messages_sent, TX_WAIT_FOREVER);
-
-                /* Check completion status.  */
-                if (status != TX_SUCCESS)
-                        break;
-
-                /* Increment the message sent.  */
-                thread_1_messages_sent++;
-        }
+        /* 创建互斥信号量 */
+        tx_mutex_create(&AppPrintfSemp, "AppPrintfSemp", TX_NO_INHERIT);
 }
 
-/**
- * @brief     : 线程2 获取由线程 1 放入队列中的消息
- * @param     : thread_input
- */
-void thread_2_entry(ULONG thread_input)
+/*
+*********************************************************************************************************
+*	函 数 名: App_Printf
+*	功能说明: 线程安全的printf方式
+*	形    参: 同printf的参数。
+*             在C中，当无法列出传递函数的所有实参的类型和数目时,可以用省略号指定参数表
+*	返 回 值: 无
+*********************************************************************************************************
+*/
+#if 0
+static void App_Printf(const char *fmt, ...)
 {
-        ULONG received_message;
-        UINT status;
+        char buf_str[200 + 1]; /* 特别注意，如果printf的变量较多，注意此局部变量的大小是否够用 */
+        va_list v_args;
 
-        /* 此线程负责获取由线程 1 放入队列中的消息 */
-        while (1) {
-                /* Increment the thread counter.  */
-                thread_2_counter++;
+        va_start(v_args, fmt);
+        (void)vsnprintf((char *)&buf_str[0], (size_t)sizeof(buf_str), (char const *)fmt, v_args);
+        va_end(v_args);
 
-                /* Retrieve a message from the queue.  */
-                status = tx_queue_receive(&queue_0, &received_message, TX_WAIT_FOREVER);
+        /* 互斥操作 */
+        tx_mutex_get(&AppPrintfSemp, TX_WAIT_FOREVER);
 
-                /* Check completion status and make sure the message is what we
-                   expected.  */
-                if ((status != TX_SUCCESS) || (received_message != thread_2_messages_received))
-                        break;
+        printf("%s", buf_str);
 
-                /* Otherwise, all is okay.  Increment the received message count.  */
-                thread_2_messages_received++;
-        }
+        tx_mutex_put(&AppPrintfSemp);
 }
+#endif
 
-/**
- * @brief     : 线程3 和 线程4 争夺 semaphore_0 的控制权
- * @param     : thread_input
- */
-void thread_3_and_4_entry(ULONG thread_input)
+/*
+*********************************************************************************************************
+*	函 数 名: DispTaskInfo
+*	功能说明: 将ThreadX任务信息通过串口打印出来
+*	形    参：无
+*	返 回 值: 无
+*********************************************************************************************************
+*/
+static void DispTaskInfo(void)
 {
-        UINT status;
+        TX_THREAD *p_tcb; /* 定义一个任务控制块指针 */
 
-        /* 此函数由线程 3 和线程 4 执行  如下面的循环所示，这两个函数会争夺 semaphore_0 的控制权  */
-        while (1) {
-                /* Increment the thread counter.  */
-                if (thread_input == 3)
-                        thread_3_counter++;
-                else
-                        thread_4_counter++;
+        p_tcb = &AppTaskStartTCB;
 
-                /* Get the semaphore with suspension.  */
-                status = tx_semaphore_get(&semaphore_0, TX_WAIT_FOREVER);
+        /* 打印标题 */
+        App_Printf("===============================================================\r\n");
+        App_Printf("OS CPU Usage = %5.2f%%\r\n", OSCPUUsage);
+        App_Printf("===============================================================\r\n");
+        App_Printf(" 任务优先级 任务栈大小 当前使用栈  最大栈使用   任务名\r\n");
+        App_Printf("   Prio     StackSize   CurStack    MaxStack   Taskname\r\n");
 
-                /* Check status.  */
-                if (status != TX_SUCCESS)
-                        break;
+        /* 遍历任务控制列表TCB list)，打印所有的任务的优先级和名称 */
+        while (p_tcb != (TX_THREAD *)0) {
+                App_Printf(
+                    "   %2d        %5d      %5d       %5d      %s\r\n", p_tcb->tx_thread_priority,
+                    p_tcb->tx_thread_stack_size, (int)p_tcb->tx_thread_stack_end - (int)p_tcb->tx_thread_stack_ptr,
+                    (int)p_tcb->tx_thread_stack_end - (int)p_tcb->tx_thread_stack_highest_ptr, p_tcb->tx_thread_name);
 
-                /* Sleep for 2 ticks to hold the semaphore.  */
-                tx_thread_sleep(2);
+                p_tcb = p_tcb->tx_thread_created_next;
 
-                /* Release the semaphore.  */
-                status = tx_semaphore_put(&semaphore_0);
-
-                /* Check status.  */
-                if (status != TX_SUCCESS)
-                        break;
-        }
-}
-
-/**
- * @brief     : 线程5 等待事件标志0的发生
- * @param     : thread_input
- */
-void thread_5_entry(ULONG thread_input)
-{
-        UINT status;
-        ULONG actual_flags;
-
-        /* 此线程会进入一个无限循环，持续等待某个事件的发生  */
-        while (1) {
-                /* Increment the thread counter.  */
-                thread_5_counter++;
-
-                /* Wait for event flag 0.  */
-                status = tx_event_flags_get(&event_flags_0, 0x1, TX_OR_CLEAR, &actual_flags, TX_WAIT_FOREVER);
-
-                /* Check status.  */
-                if ((status != TX_SUCCESS) || (actual_flags != 0x1))
-                        break;
-        }
-}
-
-/**
- * @brief     : 线程6 和 线程7 争夺 mutex_0 的所有权
- * @param     : thread_input
- */
-void thread_6_and_7_entry(ULONG thread_input)
-{
-        UINT status;
-
-        /* 此函数由线程 6 和线程 7 执行  如下面的循环所示，这两个函数会争夺 mutex_0 的所有权  */
-        while (1) {
-                /* Increment the thread counter.  */
-                if (thread_input == 6)
-                        thread_6_counter++;
-                else
-                        thread_7_counter++;
-
-                /* Get the mutex with suspension.  */
-                status = tx_mutex_get(&mutex_0, TX_WAIT_FOREVER);
-
-                /* Check status.  */
-                if (status != TX_SUCCESS)
-                        break;
-
-                /* Get the mutex again with suspension.  This shows
-                   that an owning thread may retrieve the mutex it
-                   owns multiple times.  */
-                status = tx_mutex_get(&mutex_0, TX_WAIT_FOREVER);
-
-                /* Check status.  */
-                if (status != TX_SUCCESS)
-                        break;
-
-                /* Sleep for 2 ticks to hold the mutex.  */
-                tx_thread_sleep(2);
-
-                /* Release the mutex.  */
-                status = tx_mutex_put(&mutex_0);
-
-                /* Check status.  */
-                if (status != TX_SUCCESS)
-                        break;
-
-                /* Release the mutex again.  This will actually
-                   release ownership since it was obtained twice.  */
-                status = tx_mutex_put(&mutex_0);
-
-                /* Check status.  */
-                if (status != TX_SUCCESS)
+                if (p_tcb == &AppTaskStartTCB)
                         break;
         }
 }

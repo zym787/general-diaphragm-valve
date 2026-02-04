@@ -6,7 +6,9 @@
         ],
         "settings": {
                 "clangd.arguments": [
-                        "--query-driver=D:/toolchain/arm-gnu-toolchain-13.3.rel1/bin/arm-none-eabi-*",
+                        // "--query-driver=D:/toolchain/arm-gnu-toolchain-13.3.rel1/bin/arm-none-eabi-*",
+                        // "--query-driver=D:/toolchain/arm-gnu-toolchain-13.3.rel1/bin/arm-none-eabi-gcc.exe",
+                        "--query-driver=D:/toolchain/arm-gnu-toolchain-13.3.rel1/bin/arm-none-eabi-g*",
                         "--compile-commands-dir=${workspaceFolder}/",
                         "--header-insertion=never",
                 ],

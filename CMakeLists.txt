@@ -48,12 +48,18 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
 #     Kernal/loop.c
 #     Kernal/tx_initialize_low_level.S
     Kernal/tx_initialize_low_level.S
+    Bsp/bsp.c
+    Bsp/Src/bsp_dwt.c
+    Bsp/Src/bsp_timer.c
+    Bsp/Src/bsp_led.c
 )
 
 # Add include paths
 target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user defined include paths
 #     Kernal
+        Bsp
+        Bsp/Inc
 )
 
 # Add project symbols (macros)
@@ -101,6 +107,10 @@ if(EXISTS ${CMAKE_SOURCE_DIR}/Middlewares/ST/threadx)
 else()
     message(FATAL_ERROR "Threadx submodule missing! Run: git submodule update --init")
 endif()
+
+# app支援
+# add_header_dirs(${CMAKE_CURRENT_LIST_DIR}/App)
+# add_source_files(${CMAKE_CURRENT_LIST_DIR}/App)
 
 # bsp支援
 # add_header_dirs(${CMAKE_CURRENT_LIST_DIR}/Bsp)
