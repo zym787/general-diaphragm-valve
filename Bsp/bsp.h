@@ -28,7 +28,7 @@ extern "C" {
 #include "stm32f1xx_hal.h"
 // #include "main.h"
 // #include "gpio.h"
-// #include "usart.h"
+#include "usart.h"
 // #include "tim.h"
 // #include "iwdg.h"
 
@@ -51,9 +51,9 @@ extern "C" {
 // #include "bsp_key.h"
 // #include "bsp_modbus.h"
 
-// #include "bsp_msg.h"
-// #include "bsp_user_lib.h"
-// #include "bsp_uart_fifo.h"
+#include "bsp_msg.h"
+#include "bsp_user_lib.h"
+#include "bsp_uart_fifo.h"
 #include "bsp_log.h"
 
 

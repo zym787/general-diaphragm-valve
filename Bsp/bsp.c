@@ -42,9 +42,9 @@ void bsp_Init(void)
         bsp_InitTimer(); /* 初始化硬件及软件定时器 */
         /// ↓可以使用bsp_DelayMS和bsp_DelayUS函数
 
-        // bsp_InitUart(COM1, AF1_PA9_PA10);   /* 开机后先初始化调试口 */
+        bsp_InitUart(COM1, UART1_AF_DISABLE_PA9_PA10); /* 开机后先初始化调试口 */
 
-        //         bsp_LogPrintfInfo();    /* 显示系统信息 */
+        bsp_LogPrintfInfo();    /* 显示系统信息 */
 
         //         BSP_Printf(" 请切换到RS232端口... \r\n");
 

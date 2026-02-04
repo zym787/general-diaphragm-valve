@@ -52,6 +52,11 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     Bsp/Src/bsp_dwt.c
     Bsp/Src/bsp_timer.c
     Bsp/Src/bsp_led.c
+    Bsp/Src/bsp_log.c
+    Bsp/bsp_msg.c
+    Bsp/Src/bsp_uart_fifo.c
+    Bsp/Src/bsp_user_lib.c
+   
 )
 
 # Add include paths

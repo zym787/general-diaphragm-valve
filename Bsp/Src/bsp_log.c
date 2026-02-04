@@ -59,7 +59,7 @@ void bsp_LogPrintfInfo(void)
     printf("* 软件 描 述 : %s %s  (%s)\r\n", 
         SOFTWARE_DESCRIPTION, CUSTOMIZE_DESCRIPTION, CONTROL_DESCRIPTION);
 
-    printf("* BSP  版 本 : %s %s\r\n", __STM32F0_BSP_VERSION, __STM32F0_BSP_REV_DATE);
+    printf("* BSP  版 本 : %s %s\r\n", __STM32F1_BSP_VERSION, __STM32F1_BSP_REV_DATE);
 
     printf("* \r\n");	/* 打印一行空格 */
 
