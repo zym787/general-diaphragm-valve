@@ -90,3 +90,12 @@ add_source_files(${CMAKE_CURRENT_LIST_DIR}/Middlewares/ST/threadx/ports/cortex_m
 # add_header_dirs(${CMAKE_CURRENT_LIST_DIR}/App)
 # add_source_files(${CMAKE_CURRENT_LIST_DIR}/App)
 # add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/Middlewares/ST/threadx)     # 添加子目录
+# 添加threadx子模块存在性检查
+if(EXISTS ${CMAKE_SOURCE_DIR}/Middlewares/ST/threadx)
+else()
+    message(FATAL_ERROR "Threadx submodule missing! Run: git submodule update --init")
+endif()
+
+# bsp支援
+# add_header_dirs(${CMAKE_CURRENT_LIST_DIR}/Bsp)
+# add_source_files(${CMAKE_CURRENT_LIST_DIR}/Bsp)
