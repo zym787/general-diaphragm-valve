@@ -34,7 +34,6 @@ TX_THREAD thread_4;
 TX_THREAD thread_5;
 TX_THREAD thread_6;
 TX_THREAD thread_7;
-TX_THREAD thread_8;
 TX_QUEUE queue_0;
 TX_SEMAPHORE semaphore_0;
 TX_MUTEX mutex_0;
@@ -43,8 +42,7 @@ TX_BYTE_POOL byte_pool_0;
 TX_BLOCK_POOL block_pool_0;
 UCHAR memory_area[DEMO_BYTE_POOL_SIZE];
 
-/* Define the counters used in the demo application...  */
-
+/* 定义演示应用程序中所使用的计数器…… */
 ULONG thread_0_counter;
 ULONG thread_1_counter;
 ULONG thread_1_messages_sent;
@@ -55,25 +53,27 @@ ULONG thread_4_counter;
 ULONG thread_5_counter;
 ULONG thread_6_counter;
 ULONG thread_7_counter;
-ULONG thread_8_counter;
 
-
-/* Define thread prototypes.  */
-
+/* 定义线程原型 */
 void thread_0_entry(ULONG thread_input);
 void thread_1_entry(ULONG thread_input);
 void thread_2_entry(ULONG thread_input);
 void thread_3_and_4_entry(ULONG thread_input);
 void thread_5_entry(ULONG thread_input);
 void thread_6_and_7_entry(ULONG thread_input);
-void thread_8_entry(ULONG thread_input);
-
-
-
+/**
+ * @brief     : 主循环 用于替代main函数,防止CubeMX重新生成时覆盖
+ *              c程序入口
+ */
 void loop(void)
 {
+        /* 内核开启前关闭HAL的时间基准 */
+        HAL_SuspendTick();
+
+        /* 进入ThreadX内核 */
         tx_kernel_enter();
 
+        /* 正常不会运行到这里,运行到这里证明出错了 */
         for (;;) {
                 // HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_4);
                 HAL_GPIO_WritePin(DIR1_GPIO_Port, DIR1_Pin, GPIO_PIN_SET);
@@ -89,114 +89,217 @@ void loop(void)
         }
 }
 
-/* Define what the initial system looks like.  */
-
+/*
+*******************************************************************************
+*	函 数 名: tx_application_define
+*	功能说明: ThreadX专用的任务创建，通信组件创建函数
+*	形    参: first_unused_memory  未使用的地址空间
+*	返 回 值: 无
+*******************************************************************************
+*/
 void tx_application_define(void *first_unused_memory)
 {
         CHAR *pointer = TX_NULL;
 
-        /* Create a byte memory pool from which to allocate the thread stacks.  */
-        tx_byte_pool_create(&byte_pool_0, "byte pool 0", memory_area, DEMO_BYTE_POOL_SIZE);
+        /* 创建一个字节内存池，用于分配线程栈 */
+        tx_byte_pool_create(&byte_pool_0,         /* 任务控制块池地址 */
+                            "byte pool 0",        /* 任务控制块池名 */
+                            memory_area,          /* 任务控制块池基地址 */
+                            DEMO_BYTE_POOL_SIZE); /* 任务控制块池的字节数 */
+        
+        /* 为线程 0 分配栈空间 */
+        tx_byte_allocate(&byte_pool_0,      /* 任务控制块池地址 */
+                         (VOID **)&pointer, /* 堆栈基地址 */
+                         DEMO_STACK_SIZE,   /* 栈空间大小 */
+                         TX_NO_WAIT);       /* 无等待立即创建 */
+        /* 将系统定义的相关内容放在这里，例如线程创建信息以及其他各类创建相关信息 */
 
-        /* Put system definition stuff in here, e.g. thread creates and other assorted
-           create information.  */
 
-        /* Allocate the stack for thread 0.  */
-        tx_byte_allocate(&byte_pool_0, (VOID **)&pointer, DEMO_STACK_SIZE, TX_NO_WAIT);
 
-        /* Create the main thread.  */
-        tx_thread_create(&thread_0, "thread 0", thread_0_entry, 0, pointer, DEMO_STACK_SIZE, 1, 1, TX_NO_TIME_SLICE,
-                         TX_AUTO_START);
 
-        /* Allocate the stack for thread 1.  */
-        tx_byte_allocate(&byte_pool_0, (VOID **)&pointer, DEMO_STACK_SIZE, TX_NO_WAIT);
 
-        /* Create threads 1 and 2. These threads pass information through a ThreadX
-           message queue.  It is also interesting to note that these threads have a time
-           slice.  */
-        tx_thread_create(&thread_1, "thread 1", thread_1_entry, 1, pointer, DEMO_STACK_SIZE, 16, 16, 4, TX_AUTO_START);
+        /* 创建主线程 */
+        tx_thread_create(&thread_0,        /* 任务控制块地址 */
+                         "thread 0",       /* 任务名 */
+                         thread_0_entry,   /* 启动任务函数地址 */
+                         0,                /* 传递给任务的参数 */
+                         pointer,          /* 堆栈基地址 */
+                         DEMO_STACK_SIZE,  /* 堆栈空间大小 */
+                         1,                /* 任务优先级 */
+                         1,                /* 任务抢占阈值 */
+                         TX_NO_TIME_SLICE, /* 不开启时间片 */
+                         TX_AUTO_START);   /* 创建后立即启动 */
 
-        /* Allocate the stack for thread 2.  */
-        tx_byte_allocate(&byte_pool_0, (VOID **)&pointer, DEMO_STACK_SIZE, TX_NO_WAIT);
+        /* 为线程 1 分配栈空间 */
+        tx_byte_allocate(&byte_pool_0,      /* 任务控制块池地址 */
+                         (VOID **)&pointer, /* 堆栈基地址 */
+                         DEMO_STACK_SIZE,   /* 栈空间大小 */
+                         TX_NO_WAIT);       /* 无等待立即创建 */
 
-        tx_thread_create(&thread_2, "thread 2", thread_2_entry, 2, pointer, DEMO_STACK_SIZE, 16, 16, 4, TX_AUTO_START);
+        /* 创建线程 1 和 2 这些线程通过 ThreadX 消息队列传递信息 值得一提的是，这些线程还具有时间片的概念 */
+        tx_thread_create(&thread_1,       /* 任务控制块地址 */
+                         "thread 1",      /* 任务名 */
+                         thread_1_entry,  /* 启动任务函数地址 */
+                         1,               /* 传递给任务的参数 */
+                         pointer,         /* 堆栈基地址 */
+                         DEMO_STACK_SIZE, /* 堆栈空间大小 */
+                         16,              /* 任务优先级 */
+                         16,              /* 任务抢占阈值 */
+                         4,               /* 时间片 */
+                         TX_AUTO_START);  /* 创建后立即启动 */
 
-        /* Allocate the stack for thread 3.  */
-        tx_byte_allocate(&byte_pool_0, (VOID **)&pointer, DEMO_STACK_SIZE, TX_NO_WAIT);
+        /* 为线程 2 分配栈空间 */
+        tx_byte_allocate(&byte_pool_0,      /* 任务控制块池地址 */
+                         (VOID **)&pointer, /* 堆栈基地址 */
+                         DEMO_STACK_SIZE,   /* 栈空间大小 */
+                         TX_NO_WAIT);       /* 无等待立即创建 */
 
-        /* Create threads 3 and 4.  These threads compete for a ThreadX counting semaphore.
-           An interesting thing here is that both threads share the same instruction area.  */
-        tx_thread_create(&thread_3, "thread 3", thread_3_and_4_entry, 3, pointer, DEMO_STACK_SIZE, 8, 8,
-                         TX_NO_TIME_SLICE, TX_AUTO_START);
+        tx_thread_create(&thread_2,       /* 任务控制块地址 */
+                         "thread 2",      /* 任务名 */
+                         thread_2_entry,  /* 启动任务函数地址 */
+                         2,               /* 传递给任务的参数 */
+                         pointer,         /* 堆栈基地址 */
+                         DEMO_STACK_SIZE, /* 堆栈空间大小 */
+                         16,              /* 任务优先级 */
+                         16,              /* 任务抢占阈值 */
+                         4,               /* 时间片 */
+                         TX_AUTO_START);  /* 创建后立即启动 */
 
-        /* Allocate the stack for thread 4.  */
-        tx_byte_allocate(&byte_pool_0, (VOID **)&pointer, DEMO_STACK_SIZE, TX_NO_WAIT);
+        /* 为线程 3 分配栈空间 */
+        tx_byte_allocate(&byte_pool_0,      /* 任务控制块池地址 */
+                         (VOID **)&pointer, /* 堆栈基地址 */
+                         DEMO_STACK_SIZE,   /* 栈空间大小 */
+                         TX_NO_WAIT);       /* 无等待立即创建 */
 
-        tx_thread_create(&thread_4, "thread 4", thread_3_and_4_entry, 4, pointer, DEMO_STACK_SIZE, 8, 8,
-                         TX_NO_TIME_SLICE, TX_AUTO_START);
+        /* 创建线程 3 和 4 这些线程会争夺一个 ThreadX 计数信号量 这里有一个有趣的现象：这两个线程共享相同的指令区域 */
+        tx_thread_create(&thread_3,            /* 任务控制块地址 */
+                         "thread 3",           /* 任务名 */
+                         thread_3_and_4_entry, /* 启动任务函数地址 */
+                         3,                    /* 传递给任务的参数 */
+                         pointer,              /* 堆栈基地址 */
+                         DEMO_STACK_SIZE,      /* 堆栈空间大小 */
+                         8,                    /* 任务优先级 */
+                         8,                    /* 任务抢占阈值 */
+                         TX_NO_TIME_SLICE,     /* 不开启时间片 */
+                         TX_AUTO_START);       /* 创建后立即启动 */
 
-        /* Allocate the stack for thread 5.  */
-        tx_byte_allocate(&byte_pool_0, (VOID **)&pointer, DEMO_STACK_SIZE, TX_NO_WAIT);
+        /* 为线程 4 分配栈空间 */
+        tx_byte_allocate(&byte_pool_0,      /* 任务控制块池地址 */
+                         (VOID **)&pointer, /* 堆栈基地址 */
+                         DEMO_STACK_SIZE,   /* 栈空间大小 */
+                         TX_NO_WAIT);       /* 无等待立即创建 */
 
-        /* Create thread 5.  This thread simply pends on an event flag which will be set
-           by thread_0.  */
-        tx_thread_create(&thread_5, "thread 5", thread_5_entry, 5, pointer, DEMO_STACK_SIZE, 4, 4, TX_NO_TIME_SLICE,
-                         TX_AUTO_START);
+        tx_thread_create(&thread_4,            /* 任务控制块地址 */
+                         "thread 4",           /* 任务名 */
+                         thread_3_and_4_entry, /* 启动任务函数地址 */
+                         4,                    /* 传递给任务的参数 */
+                         pointer,              /* 堆栈基地址 */
+                         DEMO_STACK_SIZE,      /* 堆栈空间大小 */
+                         8,                    /* 任务优先级 */
+                         8,                    /* 任务抢占阈值 */
+                         TX_NO_TIME_SLICE,     /* 不开启时间片 */
+                         TX_AUTO_START);       /* 创建后立即启动 */
 
-        /* Allocate the stack for thread 6.  */
-        tx_byte_allocate(&byte_pool_0, (VOID **)&pointer, DEMO_STACK_SIZE, TX_NO_WAIT);
+        /* 为线程 5 分配栈空间 */
+        tx_byte_allocate(&byte_pool_0,      /* 任务控制块池地址 */
+                         (VOID **)&pointer, /* 堆栈基地址 */
+                         DEMO_STACK_SIZE,   /* 栈空间大小 */
+                         TX_NO_WAIT);       /* 无等待立即创建 */
 
-        /* Create threads 6 and 7.  These threads compete for a ThreadX mutex.  */
-        tx_thread_create(&thread_6, "thread 6", thread_6_and_7_entry, 6, pointer, DEMO_STACK_SIZE, 8, 8,
-                         TX_NO_TIME_SLICE, TX_AUTO_START);
+        /* 创建第 5 个线程 此线程只是等待一个事件标志，该标志将由线程 0 来设置 */
+        tx_thread_create(&thread_5,        /* 任务控制块地址 */
+                         "thread 5",       /* 任务名 */
+                         thread_5_entry,   /* 启动任务函数地址 */
+                         5,                /* 传递给任务的参数 */
+                         pointer,          /* 堆栈基地址 */
+                         DEMO_STACK_SIZE,  /* 堆栈空间大小 */
+                         4,                /* 任务优先级 */
+                         4,                /* 任务抢占阈值 */
+                         TX_NO_TIME_SLICE, /* 不开启时间片 */
+                         TX_AUTO_START);   /* 创建后立即启动 */
 
-        /* Allocate the stack for thread 7.  */
-        tx_byte_allocate(&byte_pool_0, (VOID **)&pointer, DEMO_STACK_SIZE, TX_NO_WAIT);
+        /* 为线程 6 分配栈空间 */
+        tx_byte_allocate(&byte_pool_0,      /* 任务控制块池地址 */
+                         (VOID **)&pointer, /* 堆栈基地址 */
+                         DEMO_STACK_SIZE,   /* 栈空间大小 */
+                         TX_NO_WAIT);       /* 无等待立即创建 */
 
-        tx_thread_create(&thread_7, "thread 7", thread_6_and_7_entry, 7, pointer, DEMO_STACK_SIZE, 8, 8,
-                         TX_NO_TIME_SLICE, TX_AUTO_START);
-        /* Allocate the stack for thread 8.  */
-        tx_byte_allocate(&byte_pool_0, (VOID **)&pointer, DEMO_STACK_SIZE, TX_NO_WAIT);
+        /* 创建线程 6 和 7  这两个线程会争夺一个 ThreadX 互斥锁 */
+        tx_thread_create(&thread_6,            /* 任务控制块地址 */
+                         "thread 6",           /* 任务名 */
+                         thread_6_and_7_entry, /* 启动任务函数地址 */
+                         6,                    /* 传递给任务的参数 */
+                         pointer,              /* 堆栈基地址 */
+                         DEMO_STACK_SIZE,      /* 堆栈空间大小 */
+                         8,                    /* 任务优先级 */
+                         8,                    /* 任务抢占阈值 */
+                         TX_NO_TIME_SLICE,     /* 不开启时间片 */
+                         TX_AUTO_START);       /* 创建后立即启动 */
 
-        /* Create thread 8.  */
-        tx_thread_create(&thread_8, "thread 8", thread_8_entry, 8, pointer, DEMO_STACK_SIZE, 1, 1,
-                         TX_NO_TIME_SLICE, TX_AUTO_START);
+        /* 为线程 7 分配栈空间 */
+        tx_byte_allocate(&byte_pool_0,      /* 任务控制块池地址 */
+                         (VOID **)&pointer, /* 堆栈基地址 */
+                         DEMO_STACK_SIZE,   /* 栈空间大小 */
+                         TX_NO_WAIT);       /* 无等待立即创建 */
 
-        /* Allocate the message queue.  */
+        tx_thread_create(&thread_7,            /* 任务控制块地址 */
+                         "thread 7",           /* 任务名 */
+                         thread_6_and_7_entry, /* 启动任务函数地址 */
+                         7,                    /* 传递给任务的参数 */
+                         pointer,              /* 堆栈基地址 */
+                         DEMO_STACK_SIZE,      /* 堆栈空间大小 */
+                         8,                    /* 任务优先级 */
+                         8,                    /* 任务抢占阈值 */
+                         TX_NO_TIME_SLICE,     /* 不开启时间片 */
+                         TX_AUTO_START);       /* 创建后立即启动 */
+
+        /* 分配消息队列 */
         tx_byte_allocate(&byte_pool_0, (VOID **)&pointer, DEMO_QUEUE_SIZE * sizeof(ULONG), TX_NO_WAIT);
 
-        /* Create the message queue shared by threads 1 and 2.  */
-        tx_queue_create(&queue_0, "queue 0", TX_1_ULONG, pointer, DEMO_QUEUE_SIZE * sizeof(ULONG));
+        /* 创建由线程 1 和 2 共享的消息队列 */
+        tx_queue_create(&queue_0,                         /* 消息队列地址 */
+                        "queue 0",                        /* 消息队列名 */
+                        TX_1_ULONG,                       /* 消息队列大小 */
+                        pointer,                          /* 消息队列基地址 */
+                        DEMO_QUEUE_SIZE * sizeof(ULONG)); /* 消息队列长度 */
 
-        /* Create the semaphore used by threads 3 and 4.  */
-        tx_semaphore_create(&semaphore_0, "semaphore 0", 1);
+        /* 创建供线程 3 和 4 使用的信号量 */
+        tx_semaphore_create(&semaphore_0,  /* 信号量地址 */
+                            "semaphore 0", /* 信号量名 */
+                            1);            /* 信号量可用数量 */
 
-        /* Create the event flags group used by threads 1 and 5.  */
-        tx_event_flags_create(&event_flags_0, "event flags 0");
+        /* 创建供线程 1 和 5 使用的事件标志组 */
+        tx_event_flags_create(&event_flags_0,   /* 事件标志组地址 */
+                              "event flags 0"); /* 事件标志组名 */
 
-        /* Create the mutex used by thread 6 and 7 without priority inheritance.  */
-        tx_mutex_create(&mutex_0, "mutex 0", TX_NO_INHERIT);
+        /* 创建供线程 6 和 7 使用的互斥锁，且不进行优先级继承 */
+        tx_mutex_create(&mutex_0,       /* 互斥锁地址 */
+                        "mutex 0",      /* 互斥锁名 */
+                        TX_NO_INHERIT); /* 互斥量计数,不进行优先级继承 */
 
-        /* Allocate the memory for a small block pool.  */
+        /* 分配用于小型块池的内存 */
         tx_byte_allocate(&byte_pool_0, (VOID **)&pointer, DEMO_BLOCK_POOL_SIZE, TX_NO_WAIT);
 
-        /* Create a block memory pool to allocate a message buffer from.  */
+        /* 创建一个块内存池，以便从其中分配消息缓冲区 */
         tx_block_pool_create(&block_pool_0, "block pool 0", sizeof(ULONG), pointer, DEMO_BLOCK_POOL_SIZE);
 
-        /* Allocate a block and release the block memory.  */
+        /* 分配一块内存并释放该内存块 */
         tx_block_allocate(&block_pool_0, (VOID **)&pointer, TX_NO_WAIT);
 
-        /* Release the block back to the pool.  */
+        /* 将该块释放回资源池中*/
         tx_block_release(pointer);
 }
 
-/* Define the test threads.  */
-
+/* 以下定义测试线程  */
+/**
+ * @brief     : 线程0 简单的while-forever-sleep循环
+ * @param     : thread_input
+ */
 void thread_0_entry(ULONG thread_input)
 {
         UINT status;
 
-        /* This thread simply sits in while-forever-sleep loop.  */
+        /* 这个线程只是简单的处于while-forever-sleep循环,用于测试线程的基本功能 */
         while (1) {
                 /* Increment the thread counter.  */
                 thread_0_counter++;
@@ -216,16 +319,20 @@ void thread_0_entry(ULONG thread_input)
         }
 }
 
+/**
+ * @brief     : 线程1 简单的向由线程 2 共享的队列发送消息
+ * @param     : thread_input
+ */
 void thread_1_entry(ULONG thread_input)
 {
         UINT status;
 
-        /* This thread simply sends messages to a queue shared by thread 2.  */
+        /* 向由线程 2 共享的队列发送消息  */
         while (1) {
                 /* Increment the thread counter.  */
                 thread_1_counter++;
 
-                /* Send message to queue 0.  */
+                /* 通过队列0发送消息  */
                 status = tx_queue_send(&queue_0, &thread_1_messages_sent, TX_WAIT_FOREVER);
 
                 /* Check completion status.  */
@@ -237,12 +344,16 @@ void thread_1_entry(ULONG thread_input)
         }
 }
 
+/**
+ * @brief     : 线程2 获取由线程 1 放入队列中的消息
+ * @param     : thread_input
+ */
 void thread_2_entry(ULONG thread_input)
 {
         ULONG received_message;
         UINT status;
 
-        /* This thread retrieves messages placed on the queue by thread 1.  */
+        /* 此线程负责获取由线程 1 放入队列中的消息 */
         while (1) {
                 /* Increment the thread counter.  */
                 thread_2_counter++;
@@ -260,12 +371,15 @@ void thread_2_entry(ULONG thread_input)
         }
 }
 
+/**
+ * @brief     : 线程3 和 线程4 争夺 semaphore_0 的控制权
+ * @param     : thread_input
+ */
 void thread_3_and_4_entry(ULONG thread_input)
 {
         UINT status;
 
-        /* This function is executed from thread 3 and thread 4.  As the loop
-           below shows, these function compete for ownership of semaphore_0.  */
+        /* 此函数由线程 3 和线程 4 执行  如下面的循环所示，这两个函数会争夺 semaphore_0 的控制权  */
         while (1) {
                 /* Increment the thread counter.  */
                 if (thread_input == 3)
@@ -292,12 +406,16 @@ void thread_3_and_4_entry(ULONG thread_input)
         }
 }
 
+/**
+ * @brief     : 线程5 等待事件标志0的发生
+ * @param     : thread_input
+ */
 void thread_5_entry(ULONG thread_input)
 {
         UINT status;
         ULONG actual_flags;
 
-        /* This thread simply waits for an event in a forever loop.  */
+        /* 此线程会进入一个无限循环，持续等待某个事件的发生  */
         while (1) {
                 /* Increment the thread counter.  */
                 thread_5_counter++;
@@ -311,12 +429,15 @@ void thread_5_entry(ULONG thread_input)
         }
 }
 
+/**
+ * @brief     : 线程6 和 线程7 争夺 mutex_0 的所有权
+ * @param     : thread_input
+ */
 void thread_6_and_7_entry(ULONG thread_input)
 {
         UINT status;
 
-        /* This function is executed from thread 6 and thread 7.  As the loop
-           below shows, these function compete for ownership of mutex_0.  */
+        /* 此函数由线程 6 和线程 7 执行  如下面的循环所示，这两个函数会争夺 mutex_0 的所有权  */
         while (1) {
                 /* Increment the thread counter.  */
                 if (thread_input == 6)
@@ -356,30 +477,6 @@ void thread_6_and_7_entry(ULONG thread_input)
 
                 /* Check status.  */
                 if (status != TX_SUCCESS)
-                        break;
-        }
-}
-
-void thread_8_entry(ULONG thread_input)
-{
-        UINT status;
-        ULONG actual_flags;
-
-        /* This thread simply waits for an event in a forever loop.  */
-        while (1) {
-                /* Increment the thread counter.  */
-                thread_8_counter++;
-
-                /* Sleep for 10 ticks.  */
-                // HAL_GPIO_TogglePin(LED2_R_GPIO_Port, LED2_R_Pin);
-                // tx_thread_sleep(1000);
-                // HAL_GPIO_TogglePin(LED1_G_GPIO_Port, LED1_G_Pin);
-
-                /* Wait for event flag 0.  */
-                status = tx_event_flags_get(&event_flags_0, 0x1, TX_OR_CLEAR, &actual_flags, TX_WAIT_FOREVER);
-
-                /* Check status.  */
-                if ((status != TX_SUCCESS) || (actual_flags != 0x1))
                         break;
         }
 }
