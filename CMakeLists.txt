@@ -46,7 +46,8 @@ target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE
 target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user sources here
 #     Kernal/loop.c
-    Kernal/tx_initialize_low_level.s
+#     Kernal/tx_initialize_low_level.S
+    Kernal/tx_initialize_low_level.S
 )
 
 # Add include paths
