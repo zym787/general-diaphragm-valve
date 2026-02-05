@@ -1,0 +1,22 @@
+// For format details, see https://aka.ms/vscode-remote/devcontainer.json
+{
+        "name": "STM32",
+        "build": {
+                "dockerfile": "Dockerfile"
+        },
+        "runArgs": [],
+        // Configure tool-specific properties.
+        "customizations": {
+                // Configure properties specific to VS Code.
+                "vscode": {
+                        // Set *default* container specific settings.json values on container create.
+                        "settings": {},
+                        // Add the IDs of extensions you want installed when the container is created.
+                        "extensions": [
+                                "marus25.cortex-debug",
+                                "ms-vscode.cpptools-extension-pack",
+                                "spencerwmiles.vscode-task-buttons"
+                        ]
+                }
+        }
+}

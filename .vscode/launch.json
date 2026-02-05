@@ -32,21 +32,31 @@
                 },
                 {
                         "name": "Cortex Debug",
-                        "cwd": "${workspaceFolder}",
-                        "executable": "./build/Debug/general-column-valve.elf",
                         "request": "launch",
                         "type": "cortex-debug",
-                        "runToEntryPoint": "main",
+                        "armToolchainPath": "D:/toolchain/arm-gnu-toolchain-13.3.rel1/bin",
+                        "gdbPath": "D:/toolchain/arm-gnu-toolchain-13.3.rel1/bin/arm-none-eabi-gdb.exe",
                         "servertype": "openocd",
                         "configFiles": [
                                 "interface/stlink.cfg",
                                 "target/stm32f1x.cfg"
                         ],
-                        "armToolchainPath": "D:/toolchain/arm-gnu-toolchain-13.3.rel1/bin",
-                        "gdbPath": "D:/toolchain/arm-gnu-toolchain-13.3.rel1/bin/arm-none-eabi-gdb.exe",
-                        "interface": "swd",
-                        "svdPath": "D:\\toolchain\\STM32CubeCLT_1.18.0\\STMicroelectronics_CMSIS_SVD",
                         "showDevDebugOutput": "raw",
+                        "liveWatch": {
+                                "enabled": true,
+                                "samplesPerSecond": 4
+                        },
+                        "interface": "swd",
+                        "device": "STM32F103C8",
+                        "cwd": "${workspaceRoot}",
+                        "executable": "./build/Debug/general-column-valve.elf",
+                        "runToEntryPoint": "main",
+                        "rtos": "ThreadX",
+                        // "svdPath": "Keil::STM32F1xx_DFP@2.4.1",
+                        "svdFile": "C:/Users/aigis1223/.vscode/extensions/marus25.cortex-debug-dp-stm32f1-1.0.0/data/STM32F103xx.svd",
+                        // "svdPath": "D:/toolchain/STM32CubeCLT_1.18.0/STMicroelectronics_CMSIS_SVD/STM32F103.svd",
+                        "showDevDebugTimestamps": true,
+                        // "preLaunchTask": "download"
                 }
         ],
 }

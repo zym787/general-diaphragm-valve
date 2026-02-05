@@ -19,6 +19,7 @@
                                 "task": "Flash",
                                 "tooltip": "Run Flash Task"
                         },
-                ]
+                ],
+                "cortex-debug.variableUseNaturalFormat": true
         }
 }
