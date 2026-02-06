@@ -42,19 +42,15 @@ void bsp_Init(void)
         bsp_InitTimer(); /* 初始化硬件及软件定时器 */
         /// ↓可以使用bsp_DelayMS和bsp_DelayUS函数
 
-        bsp_InitUart(COM1, UART1_AF_DISABLE_PA9_PA10); /* 开机后先初始化调试口 */
+        bsp_InitUart(COM1, UART1_AF_DISABLE_PA9_PA10); /* 开机后先初始化串口1 调试口 */
 
         bsp_LogPrintfInfo();    /* 显示系统信息 */
 
-        //         BSP_Printf(" 请切换到RS232端口... \r\n");
-
-        //         bsp_DelayMS(1000);
-
-        //         bsp_InitKey();    /* 初始化按键 */
-
-        //     #if DEBUG_MB != 2
-        //         bsp_ModbusInit();   /* 初始化modbus,串口1引脚切换到232串口 */
-        //     #endif
+#if DEBUG_MB != 2
+        bsp_ModbusInit();   /* 初始化modbus, 485 串口2 */
+#endif
+        
+        bsp_println("bsp Init Completed! ");
 }
 
 /*
@@ -72,7 +68,7 @@ void bsp_ErrorHandler(char *file, uint32_t line)
      用户可以添加自己的代码报告源代码文件名和代码行号，比如将错误文件和行号打印到串口
      printf("Wrong parameters value: file %s on line %d\r\n", file, line)
      */
-//     bsp_println("Wrong parameters value: file %s on line %d", file, line);
+    bsp_println("Wrong parameters value: file %s on line %d", file, line);
 
     /* 这是一个死循环，断言失败时程序会在此处死机，以便于用户查错 */
     if (line == 0)
@@ -97,6 +93,10 @@ void bsp_ErrorHandler(char *file, uint32_t line)
  */
 void bsp_RunPer10ms(void)
 {
+#if DEBUG_MB != 2
+        /* 例如 Modbus 协议，可以插入Modbus轮询函数 */
+        bsp_ModbusPoll();
+#endif
 }
 
 /*

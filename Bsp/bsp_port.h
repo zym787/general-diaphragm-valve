@@ -89,8 +89,9 @@ extern "C" {
 #define VERSION_CHAR(a, b, c, d) SOFTWARE_NAME " v" STR(a) "." STR(b) "." STR(c) "-r" STR(d)
 #define SHORT_DATA               _YEAR_SHORT_ "." _MONTH_ "." _DAY_
 /* version string */
-#define VERSION_STRING          SOFTWARE_NAME " v"\
-                NUM2STR(PROJECT_VERSION_MAJOR) "." NUM2STR(PROJECT_VERSION_MINOR) "." NUM2STR( PROJECT_VERSION_REVISION) "." NUM2STR(PROJECT_VERSION_PATH)
+#define VERSION_STRING                                                                                    \
+        SOFTWARE_NAME " v" NUM2STR(PROJECT_VERSION_MAJOR) "." NUM2STR(PROJECT_VERSION_MINOR) "." NUM2STR( \
+            PROJECT_VERSION_REVISION) "-r" NUM2STR(PROJECT_VERSION_PATH)
 #else
 #define VERSION_CHAR(a, b, c, d) SOFTWARE_NAME##" v"##STR(a)##"."##STR(b)##"."##STR(c)##"."##STR(d)
 #define SHORT_DATA               _YEAR_SHORT_##"."##_MONTH_##"."##_DAY_

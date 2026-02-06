@@ -28,6 +28,7 @@
 #define APP_CFG_TASK_STAT_PRIO    30u
 #define APP_CFG_TASK_IDLE_PRIO    31u
 #define APP_CFG_TASK_KEEP_PRIO    5u
+#define APP_CFG_TASK_DEMO_PRIO    6u
 
 /* 任务抢占阈值,高于此值的任务才允许抢占 如果该值等于任务优先级,则禁用抢占阈值 */
 #define APP_CFG_TASK_START_PRE_TH   2u
@@ -37,6 +38,7 @@
 #define APP_CFG_TASK_STAT_PRE_TH    30u
 #define APP_CFG_TASK_IDLE_PRE_TH    31u
 #define APP_CFG_TASK_KEEP_PRE_TH    5u
+#define APP_CFG_TASK_DEMO_PRE_TH    6u
 
 /******************************************************** 任务栈大小,单位字节 */
 #define APP_CFG_TASK_START_STK_SIZE   1024u
@@ -46,6 +48,7 @@
 #define APP_CFG_TASK_IDLE_STK_SIZE    1024u
 #define APP_CFG_TASK_STAT_STK_SIZE    1024u
 #define APP_CFG_TASK_KEEP_STK_SIZE    1024u
+#define APP_CFG_TASK_DEMO_STK_SIZE    1024u
 
 /*********************************************** 静态变量: 任务启动线程控制块 */
 static TX_THREAD AppTaskStartTCB;
@@ -69,6 +72,9 @@ static uint64_t AppTaskStatStk[APP_CFG_TASK_STAT_STK_SIZE / 8];
 static TX_THREAD AppTaskKeepTCB;
 static uint64_t AppTaskKeepStk[APP_CFG_TASK_KEEP_STK_SIZE / 8];
 
+static TX_THREAD AppTaskDemoTCB;
+static uint64_t AppTaskDemoStk[APP_CFG_TASK_DEMO_STK_SIZE / 8];
+
 /******************************************************************* 函数声明 */
 static void AppTaskStart(ULONG thread_input);
 static void AppTaskMsgPro(ULONG thread_input);
@@ -82,6 +88,7 @@ static void DispTaskInfo(void);
 static void AppObjCreate(void);
 static void OSStatInit(void);
 static void AppTaskKeep(ULONG thread_input);
+static void AppTaskDemo(ULONG thread_input);
 
 /******************************************************************* 变量声明 */
 static TX_MUTEX AppPrintfSemp; /* 用于printf互斥 */
@@ -94,6 +101,7 @@ uint32_t OSIdleCtrMax;   /* 1秒内最大的空闲计数 */
 uint32_t OSIdleCtrRun;   /* 1秒内空闲任务当前计数 */
 
 uint32_t thread_0_counter = 0;
+uint32_t thread_demo_counter = 0;
 
 /**
  * @brief     : 主循环 用于替代main函数,防止CubeMX重新生成时覆盖
@@ -322,6 +330,17 @@ static void AppTaskCreate(void)
                          APP_CFG_TASK_KEEP_PRE_TH,   /* 任务抢占阀值 */
                          TX_NO_TIME_SLICE,           /* 不开启时间片 */
                          TX_AUTO_START);             /* 创建后立即启动 */
+        /**************创建DEMO任务*********************/
+        tx_thread_create(&AppTaskDemoTCB,            /* 任务控制块地址 */
+                         "App Task Demo",            /* 任务名 */
+                         AppTaskDemo,                /* 启动任务函数地址 */
+                         0,                          /* 传递给任务的参数 */
+                         &AppTaskDemoStk[0],         /* 堆栈基地址 */
+                         APP_CFG_TASK_DEMO_STK_SIZE, /* 堆栈空间大小 */
+                         APP_CFG_TASK_DEMO_PRIO,     /* 任务优先级*/
+                         APP_CFG_TASK_DEMO_PRE_TH,   /* 任务抢占阀值 */
+                         TX_NO_TIME_SLICE,           /* 不开启时间片 */
+                         TX_AUTO_START);             /* 创建后立即启动 */
 }
 
 /* 以下定义测试线程  */
@@ -339,9 +358,40 @@ static void AppTaskKeep(ULONG thread_input)
                 thread_0_counter++;
 
                 /* Sleep for 10 ticks.  */
-                // HAL_GPIO_TogglePin(LED2_R_GPIO_Port, LED2_R_Pin);
-                HAL_Delay(1000);
+                // HAL_Delay(1000);
+                // bsp_LedToggle(LED_GREEN);
+                // uint32_t uSec = 1750;
+                // bsp_println("Toggle LED in %d us !", uSec);
+                // bsp_LedToggleFlag();
+                // bsp_StartHardTimer(2, uSec, (void *)bsp_LedToggleFlag);
+
                 bsp_LedToggle(LED_GREEN);
+                _tx_thread_sleep(1000);
+
+                /* Check status.  */
+                if (status != TX_SUCCESS)
+                        break;
+        }
+}
+
+/**
+ * @brief     : 线程1 简单的while-forever-sleep循环
+ * @param     : thread_input
+ */
+static void AppTaskDemo(ULONG thread_input)
+{
+        UINT status;
+
+        bsp_MotorInit();
+
+            while (1)
+        {
+                /* Increment the thread counter.  */
+                thread_demo_counter++;
+
+                bsp_MotorTask();
+
+                _tx_thread_sleep(50);
 
                 /* Check status.  */
                 if (status != TX_SUCCESS)

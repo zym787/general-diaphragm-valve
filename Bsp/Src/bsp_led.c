@@ -20,15 +20,15 @@
 #define LED_NUM 1 /* led个数 */
 
 /* 使能GPIO时钟 */
-#define ALL_LED_GPIO_CLK_ENABLE()             \
-        {                                     \
-                __HAL_RCC_GPIOB_CLK_ENABLE(); \
-                __HAL_RCC_GPIOC_CLK_ENABLE(); \
+#define ALL_LED_GPIO_CLK_ENABLE()                                                                                      \
+        {                                                                                                              \
+                __HAL_RCC_GPIOB_CLK_ENABLE();                                                                          \
+                __HAL_RCC_GPIOC_CLK_ENABLE();                                                                          \
         };
 
 /* 依次定义GPIO */
 typedef struct {
-        GPIO_TypeDef* gpio;
+        GPIO_TypeDef *gpio;
         uint16_t pin;
         uint8_t ActiveLevel; /* 激活电平 */
 } X_GPIO_T;
@@ -158,12 +158,19 @@ void bsp_LedToggle(const uint32_t _index)
         }
 }
 
+void bsp_LedToggleFlag(void)
+{
 #if PCB_VERSION == A12_901_E2
-void bsp_LedToggleFlag(void) { bsp_LedToggle(LED2_G); }
+        bsp_LedToggle(LED2_G);
+#elif PCB_VERSION == A12_927_A
+        bsp_LedToggle(LED_RED);
 #endif
+}
 
 /**
  * @brief     : LED任务
  * @details   : 在loop.c里周期执行,用于闪烁LED
  */
-void bsp_LedTask(void) {}
+void bsp_LedTask(void)
+{
+}

@@ -36,6 +36,7 @@ extern "C" {
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdint.h>
 
 /* Component */
 
@@ -47,15 +48,15 @@ extern "C" {
 #include "bsp_dwt.h"
 #include "bsp_timer.h"
 #include "bsp_led.h"
-// #include "bsp_digit_led.h"
-// #include "bsp_key.h"
-// #include "bsp_modbus.h"
+#include "bsp_addr.h"
 
 #include "bsp_msg.h"
 #include "bsp_user_lib.h"
 #include "bsp_uart_fifo.h"
 #include "bsp_log.h"
 
+#include "bsp_modbus.h"
+#include "bsp_motor.h"
 
 /* 定义 BSP 版本号及修订日期 */
 #define __STM32F1_BSP_VERSION       "v1.3"
@@ -68,7 +69,7 @@ extern "C" {
 #define DISABLE_INT()   __set_PRIMASK(1)    /* 禁止全局中断 */
 
 /* 这个宏仅用于调试阶段排错 */
-#if DEBUG_MODE == 1
+#if DEBUG_BSP == 1
 #define BSP_Printf      printf
 #else
 #define BSP_Printf(...)

@@ -2,11 +2,11 @@
  * @file      : bsp_uart_fifo.c
  * @brief     : 串口中断+FIFO驱动模块
  *              采用串口中断+FIFO模式实现多个串口的同时访问
- * 
+ *
  * @version   : 2.2
  * @author    : Drinkto
  * @date      : Jan 06, 2026
- * 
+ *
  * @changelog:
  * | Date | version | Author | Description |
  * | --- | --- | --- | --- |
@@ -129,7 +129,10 @@ void RS485_InitTXE(void);
  *   返 回 值: g_ucEnableUsartMapFlag的值
  *******************************************************************************
  */
-uint8_t bsp_GetUsartSkipGpioInitFlag(void) { return g_ucEnableUsartSkipGpioInitFlag; }
+uint8_t bsp_GetUsartSkipGpioInitFlag(void)
+{
+        return g_ucEnableUsartSkipGpioInitFlag;
+}
 /*
  *******************************************************************************
  *   函 数 名: bsp_SetUsartSkipGpioInitFlag
@@ -139,7 +142,10 @@ uint8_t bsp_GetUsartSkipGpioInitFlag(void) { return g_ucEnableUsartSkipGpioInitF
  *   返 回 值: 无
  *******************************************************************************
  */
-void bsp_SetUsartSkipGpioInitFlag(uint8_t _skip) { g_ucEnableUsartSkipGpioInitFlag = ((_skip == TRUE) ? TRUE : FALSE); }
+void bsp_SetUsartSkipGpioInitFlag(uint8_t _skip)
+{
+        g_ucEnableUsartSkipGpioInitFlag = ((_skip == TRUE) ? TRUE : FALSE);
+}
 
 /*
 *********************************************************************************************************
@@ -153,11 +159,11 @@ void bsp_SetUsartSkipGpioInitFlag(uint8_t _skip) { g_ucEnableUsartSkipGpioInitFl
 void bsp_InitUart(COM_PORT_E _ucPort, USART_ALTERNATE_E _ucAF)
 {
 #if 0
-    ///串口取消初始化
-    if (_ucPort == COM1) {
-        HAL_UART_MspDeInit(&huart1);
-        HAL_UART_DeInit(&huart1);
-    }
+        /// 串口取消初始化
+        if (_ucPort == COM1) {
+                HAL_UART_MspDeInit(&huart1);
+                HAL_UART_DeInit(&huart1);
+        }
 #endif
 
         UartVarInit(_ucPort); /* 必须先初始化全局变量,再配置硬件 */
@@ -279,7 +285,10 @@ void comSendBuf(COM_PORT_E _ucPort, uint8_t *_ucaBuf, uint16_t _usLen)
 *	返 回 值: 无
 *********************************************************************************************************
 */
-void comSendChar(COM_PORT_E _ucPort, uint8_t _ucByte) { comSendBuf(_ucPort, &_ucByte, 1); }
+void comSendChar(COM_PORT_E _ucPort, uint8_t _ucByte)
+{
+        comSendBuf(_ucPort, &_ucByte, 1);
+}
 
 /*
 *********************************************************************************************************
@@ -403,7 +412,10 @@ void RS485_InitTXE(void)
 *	返 回 值: 无
 *********************************************************************************************************
 */
-void RS485_SetBaud(uint32_t _baud) { comSetBaud(COM2, _baud); }
+void RS485_SetBaud(uint32_t _baud)
+{
+        comSetBaud(COM2, _baud);
+}
 
 /*
 *********************************************************************************************************
@@ -414,7 +426,10 @@ void RS485_SetBaud(uint32_t _baud) { comSetBaud(COM2, _baud); }
 *	返 回 值: 无
 *********************************************************************************************************
 */
-void RS485_SendBefor(void) { RS485_TX_EN(); /* 切换RS485收发芯片为发送模式 */ }
+void RS485_SendBefor(void)
+{
+        RS485_TX_EN(); /* 切换RS485收发芯片为发送模式 */
+}
 
 /*
 *********************************************************************************************************
@@ -425,7 +440,10 @@ void RS485_SendBefor(void) { RS485_TX_EN(); /* 切换RS485收发芯片为发送�
 *	返 回 值: 无
 *********************************************************************************************************
 */
-void RS485_SendOver(void) { RS485_RX_EN(); /* 切换RS485收发芯片为接收模式 */ }
+void RS485_SendOver(void)
+{
+        RS485_RX_EN(); /* 切换RS485收发芯片为接收模式 */
+}
 
 /*
 *********************************************************************************************************
@@ -438,9 +456,9 @@ void RS485_SendOver(void) { RS485_RX_EN(); /* 切换RS485收发芯片为接收�
 */
 void RS485_SendBuf(uint8_t *_ucaBuf, uint16_t _usLen)
 {
-        comSendBuf(COM3, _ucaBuf, _usLen);
+        comSendBuf(COM2, _ucaBuf, _usLen);
 #if DEBUG_MB == 1
-        BSP_Printf("COM%d(RS485) Send:|", COM3 + 1);
+        BSP_Printf("COM%d(RS485) Send:|", COM2 + 1);
         for (uint16_t i = 0; i < _usLen; ++i) {
                 BSP_Printf(" %02X", _ucaBuf[i]);
         }
@@ -456,7 +474,10 @@ void RS485_SendBuf(uint8_t *_ucaBuf, uint16_t _usLen)
 *	返 回 值: 无
 *********************************************************************************************************
 */
-void RS485_SendStr(char *_pBuf) { RS485_SendBuf((uint8_t *)_pBuf, strlen(_pBuf)); }
+void RS485_SendStr(char *_pBuf)
+{
+        RS485_SendBuf((uint8_t *)_pBuf, strlen(_pBuf));
+}
 
 /*
 *********************************************************************************************************
@@ -466,10 +487,10 @@ void RS485_SendStr(char *_pBuf) { RS485_SendBuf((uint8_t *)_pBuf, strlen(_pBuf))
 *	返 回 值: 无
 *********************************************************************************************************
 */
-// extern void MODH_ReciveNew(uint8_t _byte);
+extern void MODS_ReciveNew(uint8_t _byte);
 void RS485_ReciveNew(uint8_t _byte)
 {
-        // MODH_ReciveNew(_byte);
+        MODS_ReciveNew(_byte);
 }
 
 /******************************* RS485通信 UART1 *******************************/
@@ -575,7 +596,7 @@ void bsp_SetUartParam(USART_TypeDef *Instance, uint32_t BaudRate, uint32_t Parit
 
         UartHandle.Init.BaudRate = BaudRate;
         UartHandle.Init.WordLength = UART_WORDLENGTH_8B;
-        UartHandle.Init.StopBits = UART_STOPBITS_2;
+        UartHandle.Init.StopBits = UART_STOPBITS_1;
         UartHandle.Init.Parity = Parity;
         UartHandle.Init.HwFlowCtl = UART_HWCONTROL_NONE;
         UartHandle.Init.Mode = Mode;
@@ -637,7 +658,7 @@ static void InitHardUart1(USART_ALTERNATE_E _ucAF)
                 HAL_GPIO_Init(USART1_AF_DISABLE_TX_GPIO_PORT, &GPIO_InitStruct);
         }
         /* 配置NVIC the NVIC for UART */
-        HAL_NVIC_SetPriority(USART1_IRQn, 0, 3);
+        HAL_NVIC_SetPriority(USART1_IRQn, 0, 1);
         HAL_NVIC_EnableIRQ(USART1_IRQn);
 
         /* 配置波特率、奇偶校验 */
@@ -1028,30 +1049,48 @@ static void UartIRQ(UART_T *_pUart)
 *********************************************************************************************************
 */
 #if UART1_FIFO_EN == 1
-void USART1_IRQHandler(void) { UartIRQ(&g_tUart1); }
+void USART1_IRQHandler(void)
+{
+        UartIRQ(&g_tUart1);
+}
 #endif
 
 #if UART2_FIFO_EN == 1
-void USART2_IRQHandler(void) { UartIRQ(&g_tUart2); }
+void USART2_IRQHandler(void)
+{
+        UartIRQ(&g_tUart2);
+}
 #endif
 
 #if UART3_FIFO_EN == 1
-void USART3_IRQHandler(void) { UartIRQ(&g_tUart3); }
+void USART3_IRQHandler(void)
+{
+        UartIRQ(&g_tUart3);
+}
 #endif
 #endif
 
 /*
-*********************************************************************************************************
-*	函 数 名: fputc
+********************************************************************************
 *	功能说明: 重定义putc函数，这样可以使用printf函数从串口1打印输出
-*	形    参: 无
+*	形    参: ch 要打印的字符
 *	返 回 值: 无
-*********************************************************************************************************
+********************************************************************************
 */
-int fputc(int ch, FILE *f)
+#ifdef __GNUC__
+#define PUTCHAR_PROTOTYPE int __io_putchar(int ch)
+#else
+#define PUTCHAR_PROTOTYPE int fputc(int ch, FILE *f)
+#endif
+PUTCHAR_PROTOTYPE
 {
 #if 1 /* 将需要printf的字符通过串口中断FIFO发送出去，printf函数会立即返回 */
+
+#if 1
         comSendChar(COM1, ch);
+#else
+        HAL_UART_Transmit(&huart1, (uint8_t *)&ch, 1, 0xFFFF);
+#endif
 
         return ch;
 #else /* 采用阻塞方式发送每个字符,等待数据发送完毕 */
@@ -1065,16 +1104,20 @@ int fputc(int ch, FILE *f)
         return ch;
 #endif
 }
-
 /*
 *********************************************************************************************************
-*	函 数 名: fgetc
+*	函 数 名: GETCHAR_PROTOTYPE
 *	功能说明: 重定义getc函数，这样可以使用getchar函数从串口1输入数据
 *	形    参: 无
 *	返 回 值: 无
 *********************************************************************************************************
 */
-int fgetc(FILE *f)
+#ifdef __GNUC__
+#define GETCHAR_PROTOTYPE int __io_getchar(void)
+#else
+#define GETCHAR_PROTOTYPE int fgetc(FILE *f)
+#endif
+GETCHAR_PROTOTYPE
 {
 #if 1 /* 从串口接收FIFO中取1个数据, 只有取到数据才返回 */
         uint8_t ucData;

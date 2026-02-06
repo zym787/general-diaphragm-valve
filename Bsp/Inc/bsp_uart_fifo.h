@@ -69,8 +69,8 @@ typedef enum {
 /* 定义串口波特率和FIFO缓冲区大小，分为发送缓冲区和接收缓冲区, 支持全双工 */
 #if UART1_FIFO_EN == 1
 #define UART1_BAUD        115200
-#define UART1_TX_BUF_SIZE 1 * 128
-#define UART1_RX_BUF_SIZE 1 * 128
+#define UART1_TX_BUF_SIZE 1 * 1024
+#define UART1_RX_BUF_SIZE 1 * 1024
 #endif
 
 #if UART2_FIFO_EN == 1
@@ -105,12 +105,6 @@ typedef struct {
         void (*ReciveNew)(uint8_t _byte); /* 串口收到数据的回调函数指针 */
         uint8_t Sending;                  /* 正在发送中 */
 } UART_T;
-
-// #if UART1_FIFO_EN == 1
-//     extern UART_T g_tUart1;
-//     extern uint8_t g_TxBuf1[UART1_TX_BUF_SIZE];		/* 发送缓冲区 */
-//     extern uint8_t g_RxBuf1[UART1_RX_BUF_SIZE];		/* 接收缓冲区 */
-// #endif
 
 uint8_t bsp_GetUsartSkipGpioInitFlag(void);
 void bsp_SetUsartSkipGpioInitFlag(uint8_t _switch);

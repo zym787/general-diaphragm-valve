@@ -51,9 +51,9 @@
 #define printw(...)
 #endif
 
-#if DEBUG_MODE == 1
-#define bsp_println(format, ...)  printf("[%20s:%d]  " format "\r\n", FILE_NAME2, __LINE__, ##__VA_ARGS__)
-#define bsp_printf(format, ...)    printf("[%20s:%d]  " format, FILE_NAME2, __LINE__, ##__VA_ARGS__)
+#if DEBUG_BSP == 1
+#define bsp_println(format, ...)        printf("[%20s:%4d]  " format "\r\n", FILE_NAME2, __LINE__, ##__VA_ARGS__)
+#define bsp_printf(format, ...)         printf("[%20s:%4d]  " format, FILE_NAME2, __LINE__, ##__VA_ARGS__)
 #else
 #define bsp_println(format, ...)
 #define bsp_printf(format, ...)

@@ -61,12 +61,19 @@ void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(GPIOB, DIR3_Pin|LED1_G_Pin|STEP3_Pin|ENA4_Pin
                           |DIR4_Pin, GPIO_PIN_RESET);
 
-  /*Configure GPIO pins : ENA1_Pin DIR1_Pin LED2_R_Pin */
-  GPIO_InitStruct.Pin = ENA1_Pin|DIR1_Pin|LED2_R_Pin;
+  /*Configure GPIO pins : ENA1_Pin DIR1_Pin */
+  GPIO_InitStruct.Pin = ENA1_Pin|DIR1_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : LED2_R_Pin */
+  GPIO_InitStruct.Pin = LED2_R_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+  HAL_GPIO_Init(LED2_R_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pins : OPTO_IN1_Pin OPTO_IN2_Pin OPTO_IN3_Pin OPTO_IN4_Pin */
   GPIO_InitStruct.Pin = OPTO_IN1_Pin|OPTO_IN2_Pin|OPTO_IN3_Pin|OPTO_IN4_Pin;
@@ -74,22 +81,32 @@ void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : DIR2_Pin ENA2_Pin STEP2_Pin ENA3_Pin
-                           STEP4_Pin RS485_CTR_Pin */
-  GPIO_InitStruct.Pin = DIR2_Pin|ENA2_Pin|STEP2_Pin|ENA3_Pin
-                          |STEP4_Pin|RS485_CTR_Pin;
+  /*Configure GPIO pins : DIR2_Pin ENA2_Pin ENA3_Pin RS485_CTR_Pin */
+  GPIO_InitStruct.Pin = DIR2_Pin|ENA2_Pin|ENA3_Pin|RS485_CTR_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : DIR3_Pin LED1_G_Pin STEP3_Pin ENA4_Pin
-                           DIR4_Pin */
-  GPIO_InitStruct.Pin = DIR3_Pin|LED1_G_Pin|STEP3_Pin|ENA4_Pin
-                          |DIR4_Pin;
+  /*Configure GPIO pins : STEP2_Pin STEP4_Pin */
+  GPIO_InitStruct.Pin = STEP2_Pin|STEP4_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : DIR3_Pin ENA4_Pin DIR4_Pin */
+  GPIO_InitStruct.Pin = DIR3_Pin|ENA4_Pin|DIR4_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : LED1_G_Pin STEP3_Pin */
+  GPIO_InitStruct.Pin = LED1_G_Pin|STEP3_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
   /*Configure GPIO pins : I2C_SDA_Pin I2C_SCK_Pin DIPSW2_Pin DIPSW4_Pin

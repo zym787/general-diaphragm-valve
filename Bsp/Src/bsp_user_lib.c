@@ -18,7 +18,7 @@
  * | Oct 238, 2025 | 1.4 | Drinkto | 添加字符串处理函数 |
  */
 
-// #include "bsp.h"
+#include "bsp.h"
 
 uint32_t ASCIITOHEX(uint8_t *buf, uint8_t len)
 {

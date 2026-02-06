@@ -16,7 +16,6 @@
 
 #include "bsp.h"
 
-
 static void bsp_LogDisplayBanner(void);
 
 /*
@@ -29,49 +28,49 @@ static void bsp_LogDisplayBanner(void);
 */
 void bsp_LogPrintfInfo(void)
 {
-    bsp_LogDisplayBanner();
-    
-    printf("********************************************************************************\r\n");
-    printf("* \r\n");	/* 打印一行空格 */
-    
-    /* 检测CPU ID */
-    uint32_t CPU_Sn0, CPU_Sn1, CPU_Sn2;
-    
-    CPU_Sn0 = HAL_GetUIDw0();
-    CPU_Sn1 = HAL_GetUIDw1();
-    CPU_Sn2 = HAL_GetUIDw2();
+        bsp_LogDisplayBanner();
 
-    printf("* CPU       : STM32F030K6T6  LQFP32   Max Freq.%dMHz\r\n", SystemCoreClock / 1000000);
-    
-    printf("* UID       : %08X %08X %08X\r\n", CPU_Sn2, CPU_Sn1, CPU_Sn0);
-    
-    printf("* PCB       : %s  %s\r\n", BOARD_VERSION_CHAR, BOARD_DESCRIPTION);
+        printf("********************************************************************************\r\n");
+        printf("* \r\n"); /* 打印一行空格 */
 
-    /* 打印ST的HAL库版本 */
-    printf("* HAL库版本  : %08X\r\n", HAL_GetHalVersion());
-    printf("* \r\n");	/* 打印一行空格 */
+        /* 检测CPU ID */
+        uint32_t CPU_Sn0, CPU_Sn1, CPU_Sn2;
 
-    printf("* 软件 版 本 : %s_%d (%04X %04d)\r\n", 
-        VERSION_STRING, VERSION_DATA_NUMBER, SOFTWARE_NAME_NUMBER, VERSION_NUMBER);
+        CPU_Sn0 = HAL_GetUIDw0();
+        CPU_Sn1 = HAL_GetUIDw1();
+        CPU_Sn2 = HAL_GetUIDw2();
 
-    printf("* 编译 时 间 : %s %s\r\n",  __DATE__, __TIME__);
+        printf("* CPU       : STM32F030K6T6  LQFP32   Max Freq.%dMHz\r\n", SystemCoreClock / 1000000);
 
-    printf("* 软件 描 述 : %s %s  (%s)\r\n", 
-        SOFTWARE_DESCRIPTION, CUSTOMIZE_DESCRIPTION, CONTROL_DESCRIPTION);
+        printf("* UID       : %08X %08X %08X\r\n", CPU_Sn2, CPU_Sn1, CPU_Sn0);
 
-    printf("* BSP  版 本 : %s %s\r\n", __STM32F1_BSP_VERSION, __STM32F1_BSP_REV_DATE);
+        printf("* PCB       : %s  %s\r\n", BOARD_VERSION_CHAR, BOARD_DESCRIPTION);
 
-    printf("* \r\n");	/* 打印一行空格 */
+        /* 打印ST的HAL库版本 */
+        printf("* HAL库版本  : %08X\r\n", HAL_GetHalVersion());
+        printf("* \r\n"); /* 打印一行空格 */
 
-    printf("********************************************************************************\r\n");
+        printf("* 软件 版 本 : %s_%d (%04X %04d)\r\n", VERSION_STRING, VERSION_DATA_NUMBER, SOFTWARE_NAME_NUMBER,
+               VERSION_NUMBER);
+
+        printf("* 编译 时 间 : %s %s\r\n", __DATE__, __TIME__);
+
+        printf("* 软件 描 述 : %s %s  (%s)\r\n", SOFTWARE_DESCRIPTION, CUSTOMIZE_DESCRIPTION, CONTROL_DESCRIPTION);
+
+        printf("* BSP  版 本 : %s %s\r\n", __STM32F1_BSP_VERSION, __STM32F1_BSP_REV_DATE);
+
+        printf("* \r\n"); /* 打印一行空格 */
+
+        printf("********************************************************************************\r\n");
 }
 
-void bsp_LogDisplayBanner(void) {
-    printf("\n");
-    printf("\t\t%s\n", "███████ ███████        █████   ██████  ███████ ");
-    printf("\t\t%s\n", "   ███  ██            ██   ██ ██       ██      ");
-    printf("\t\t%s\n", "  ███   █████   █████ ███████ ██   ███ ███████ ");
-    printf("\t\t%s\n", " ███    ██            ██   ██ ██    ██      ██ ");
-    printf("\t\t%s\n", "███████ ██            ██   ██  ██████  ███████ ");
-    printf("\n");
+void bsp_LogDisplayBanner(void)
+{
+        printf("\n");
+        printf("\t\t%s\n", "███████ ███████        █████   ██████  ███████ ");
+        printf("\t\t%s\n", "   ███  ██            ██   ██ ██       ██      ");
+        printf("\t\t%s\n", "  ███   █████   █████ ███████ ██   ███ ███████ ");
+        printf("\t\t%s\n", " ███    ██            ██   ██ ██    ██      ██ ");
+        printf("\t\t%s\n", "███████ ██            ██   ██  ██████  ███████ ");
+        printf("\n");
 }

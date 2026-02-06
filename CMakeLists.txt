@@ -56,6 +56,8 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     Bsp/bsp_msg.c
     Bsp/Src/bsp_uart_fifo.c
     Bsp/Src/bsp_user_lib.c
+    Bsp/Src/bsp_modbus.c
+    Bsp/Src/bsp_motor.c
    
 )
 
@@ -72,6 +74,7 @@ target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user defined symbols
     TX_INCLUDE_USER_DEFINE_FILE
     THREADX_ENABLED
+    DEBUG_BSP=1
 )
 
 # Remove wrong libob.a library dependency when using cpp files
@@ -114,9 +117,18 @@ else()
 endif()
 
 # app支援
-# add_header_dirs(${CMAKE_CURRENT_LIST_DIR}/App)
-# add_source_files(${CMAKE_CURRENT_LIST_DIR}/App)
+add_header_dirs(${CMAKE_CURRENT_LIST_DIR}/App)
+add_source_files(${CMAKE_CURRENT_LIST_DIR}/App)
 
 # bsp支援
 # add_header_dirs(${CMAKE_CURRENT_LIST_DIR}/Bsp)
 # add_source_files(${CMAKE_CURRENT_LIST_DIR}/Bsp)
+
+# modbus支援
+add_header_dirs(${CMAKE_CURRENT_LIST_DIR}/Middlewares/Third_Party/Armfly/modbus)
+add_source_files(${CMAKE_CURRENT_LIST_DIR}/Middlewares/Third_Party/Armfly/modbus)
+
+# Component支援
+# stepper motor驱动支援
+add_header_dirs(${CMAKE_CURRENT_LIST_DIR}/Component/motor)
+add_source_files(${CMAKE_CURRENT_LIST_DIR}/Component/motor)

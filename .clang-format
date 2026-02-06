@@ -1,6 +1,8 @@
 ---
 Language: Cpp
-BasedOnStyle: Google
+# BasedOnStyle: Google
+# BasedOnStyle:
+BasedOnStyle: LLVM
 
 # 花括号前换行的设置设为 Linux 风格，即函数换行，其他情况不换行
 BreakBeforeBraces: Linux
@@ -12,8 +14,14 @@ TabWidth: 8
 # 代码块缩进 4 个空格
 IndentWidth: 8
 
+# 不排序包含文件
+SortIncludes : false
+
 # 不允许在一行中使用简短的 if 语句写法
 AllowShortIfStatementsOnASingleLine: false
+AllowShortBlocksOnASingleLine: false
+# 允许短的函数放在同一行, 可选值: None, InlineOnly(定义在类中), Empty(空函数), Inline(定义在类中，空函数), All
+AllowShortFunctionsOnASingleLine: None
 
 # 每行代码最大字符数不做硬性要求，但建议控制在 120 以内
 ColumnLimit: 120
@@ -22,4 +30,9 @@ ColumnLimit: 120
 AlignConsecutiveMacros: AcrossComments
 
 # 访问权限修饰符的位置为 -2，即在类型和名称之间
-AccessModifierOffset: -2
+AccessModifierOffset: -4
+
+# 大括号换行
+BraceWrapping:
+  AfterStruct: true
+  AfterUnion: true

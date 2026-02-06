@@ -38,8 +38,9 @@
                         "gdbPath": "D:/toolchain/arm-gnu-toolchain-13.3.rel1/bin/arm-none-eabi-gdb.exe",
                         "servertype": "openocd",
                         "configFiles": [
-                                "interface/stlink.cfg",
-                                "target/stm32f1x.cfg"
+                                // "interface/stlink.cfg",
+                                // "target/stm32f1x.cfg",
+                                "${workspaceRoot}/openocd/openocd.cfg"
                         ],
                         "showDevDebugOutput": "raw",
                         "liveWatch": {
@@ -48,6 +49,8 @@
                         },
                         "interface": "swd",
                         "device": "STM32F103C8",
+                        "targetId": "STM32F103C8",
+                        "cmsisPack": "D:/toolchain/Keil_v5/ARM/PACK/Keil/STM32F1xx_DFP/2.4.1",
                         "cwd": "${workspaceRoot}",
                         "executable": "./build/Debug/general-column-valve.elf",
                         "runToEntryPoint": "main",

@@ -27,7 +27,7 @@
 #include "bsp.h"
 
 /* 定义用于硬件定时器的TIM 可使用: TIM2 - TIM5 */
-//#define USE_TIM2
+// #define USE_TIM2
 #define USE_TIM3
 //#define USE_TIM4
 
@@ -110,9 +110,11 @@ void bsp_InitTimer(void)
     ///hal初始化完成后,跳转到bsp再打开systick中断提供bsp时基
     bsp_SetSystickISRFlag(TRUE);    /* 1表示执行systick中断 */
 #endif
-    
-    ///初始化TIM3硬件定时器
+
+    /*  初始化硬件定时器 */
+#if defined(USE_TIM2) || defined(USE_TIM3) || defined(USE_TIM4) || defined(USE_TIM5)
     bsp_InitHardTimer();
+#endif
 }
 
 /*
@@ -580,7 +582,7 @@ void bsp_InitHardTimer(void)
      usPeriod = 0xFFFFFFFF 表示最大0xFFFFFFFF微秒。
      */
     TimHandle.Instance = TIMx;
-    TimHandle.Init.Prescaler = usPrescaler;
+    TimHandle.Init.Prescaler = 72 - 1;
     TimHandle.Init.Period = usPeriod;
     TimHandle.Init.ClockDivision = 0;
     TimHandle.Init.CounterMode = TIM_COUNTERMODE_UP;

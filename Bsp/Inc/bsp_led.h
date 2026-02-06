@@ -60,9 +60,7 @@ extern void bsp_LedOn(uint32_t _index);
 extern void bsp_LedOff(uint32_t _index);
 extern uint8_t bsp_IsLedOn(uint32_t _index);
 extern void bsp_LedToggle(uint32_t _index);
-#if PCB_VERSION == A12_901_E2
 extern void bsp_LedToggleFlag(void);
-#endif
 
 extern void bsp_LedTask(void);
 
