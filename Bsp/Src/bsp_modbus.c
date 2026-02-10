@@ -17,14 +17,36 @@
 #include "bsp.h"
 // #include "app.h"
 #include "app_data.h"
-#include "modbus_slave.h"
+// #include "modbus_slave.h"
+
+#include "mb.h"
+#include "mbport.h"
+
+/* ----------------------- Defines ------------------------------------------*/
+#define REG_INPUT_START 1000
+#define REG_INPUT_NREGS 4
+#define SLAVE_ID        0x01
+#define MB_BAUDRATE     115200
+// #define MB_BAUDRATE     9600
+
+/* ----------------------- Static variables ---------------------------------*/
+static USHORT usRegInputStart = REG_INPUT_START;
+static USHORT usRegInputBuf[REG_INPUT_NREGS];
+static uint32_t lastToggleTime;
 
 MSG_T ucMsg; /// 信号量
 
 uint32_t g_MBBaudRateTable[MB_BAUDRATE_SETTING_NUM] = {4800ul, 9600ul, 19200ul, 38400ul, 115200ul};
+/* 保持寄存器内容 */
+uint16_t usRegHoldingBuf[REG_HOLDING_NREGS] = {0};
 
 static void bsp_MB_GetHoldingReg(void);
 static void bsp_MB_SetHoldingReg(uint32_t _reg);
+/* ----------------Modbus register callback functions -----------------------*/
+eMBErrorCode eMBRegInputCB(UCHAR *pucRegBuffer, USHORT usAddress, USHORT usNRegs);
+eMBErrorCode eMBRegHoldingCB(UCHAR *pucRegBuffer, USHORT usAddress, USHORT usNRegs, eMBRegisterMode eMode);
+eMBErrorCode eMBRegCoilsCB(UCHAR *pucRegBuffer, USHORT usAddress, USHORT usNCoils, eMBRegisterMode eMode);
+eMBErrorCode eMBRegDiscreteCB(UCHAR *pucRegBuffer, USHORT usAddress, USHORT usNDiscrete);
 
 // ---------------------- 第一步：定义寄存器表（核心，易修改）----------------------
 // 说明：新增/修改寄存器，只需在此添加/修改项，无需改动其他逻辑
@@ -144,54 +166,42 @@ void Modbus_Reg_Print_Table(void)
 
 void bsp_ModbusInit(void)
 {
-        /// 拉取配置
-        //    for (uint8_t i = 0; i < EE_NUM; ++i) {
-        //        SetHoldingReg(i);
-        //    }
+        uint8_t addr = bsp_GetAddress();
 
-        /* 485 串口2配置 */
-        bsp_InitUart(COM2, UART2_AF_DISABLE_PA2_PA3); /* 初始化串口参数 */
+        // Deinitialize COM port (initialized by BSP) for use with Modbus
+        HAL_Delay(100); // Wait for message to be sent
 
-        bsp_DelayMS(10);
-        RS485_SetBaud(g_MBBaudRateTable[g_AppData.mb_baud]); // 更新波特率
-        bsp_println(" 485 Initialize! Baud: %dbps (%d) ", g_MBBaudRateTable[g_AppData.mb_baud], g_AppData.mb_baud);
-        bsp_DelayMS(10);
+        eMBErrorCode eStatus;
 
-        /// 消息通知复位
-        bsp_InitMsg();
+        bsp_println("Init Uart 2 for Modbus!");
 
-        /// 初始化协议栈
-        bsp_SetModbusPollFlag(TRUE); /* 初始化完成后开始Modbus Poll */
-}
+        /* Initialize Modbus protocol stack */
+        // eStatus = eMBInit(MB_RTU, SLAVE_ID, 0, MB_BAUDRATE, MB_PAR_NONE, UART_STOPBITS_1);
+        eStatus = eMBInit(MB_RTU, addr, 1, MB_BAUDRATE, MB_PAR_NONE, UART_STOPBITS_1);
+        bsp_println("Modbus Init Addr: 0x%02X Baud: %d Status: %d", addr, MB_BAUDRATE, eStatus);
 
-/// 是否执行bsp库的modbus轮询服务
-static __IO uint8_t g_ucEnableModbusPoll = 0; /* 等待变量初始化 */
+        /* Initialize register values */
+        usRegHoldingBuf[0] = 0; /* Initialize counter */
+        usRegHoldingBuf[1] = 10;
+        usRegHoldingBuf[2] = 20;
+        usRegHoldingBuf[3] = 30;
+        usRegHoldingBuf[4] = 40;
+        usRegHoldingBuf[5] = 50;
+        usRegHoldingBuf[6] = 60;
+        usRegHoldingBuf[7] = 70;
+        usRegHoldingBuf[8] = 80;
+        usRegHoldingBuf[9] = 90;
 
-/*
- *******************************************************************************
- *   函 数 名: bsp_GetModbusPollFlag
- *   功能说明: 返回g_ucEnableModbusPoll的值
- *             以判断是否执行bsp库的滴答定时中断服务程序
- *   形    参:  无
- *   返 回 值: g_ucEnableModbusPoll的值
- *******************************************************************************
- */
-uint8_t bsp_GetModbusPollFlag(void)
-{
-        return g_ucEnableModbusPoll;
-}
-/*
- *******************************************************************************
- *   函 数 名: bsp_SetModbusPollFlag
- *   功能说明: 设置g_ucEnableModbusPoll的值
- *   形    参:  _switch 0 不执行bsp库的滴答定时中断服务程序
- *                      1 执行bsp库的滴答定时中断服务程序
- *   返 回 值: 无
- *******************************************************************************
- */
-void bsp_SetModbusPollFlag(uint8_t _switch)
-{
-        g_ucEnableModbusPoll = ((_switch == TRUE) ? TRUE : FALSE);
+        /* Enable Modbus protocol stack */
+        eStatus = eMBEnable();
+        bsp_println("Modbus Enable Status: %d", eStatus);
+
+        if (eStatus != MB_ENOERR) {
+                Error_Handler();
+        }
+
+        lastToggleTime = HAL_GetTick();
+        bsp_println("Now: %d", lastToggleTime);
 }
 
 /*
@@ -204,10 +214,28 @@ void bsp_SetModbusPollFlag(uint8_t _switch)
 */
 void bsp_ModbusPoll(void)
 {
-        if (bsp_GetModbusPollFlag() == FALSE) {
-                return;
+        static uint8_t HolingIndex = 0;
+        eMBErrorCode eStatus;
+        /* Process Modbus events */
+        eStatus = eMBPoll();
+
+        /* Update the first register as a counter */
+        usRegHoldingBuf[HolingIndex++]++;
+        if (HolingIndex >= REG_HOLDING_NREGS) {
+                HolingIndex = 0;
         }
-        MODS_Poll();
+
+        /* Toggle LED for visual feedback every 500 ms */
+        if (HAL_GetTick() - lastToggleTime >= 1000) {
+#ifdef MB_TIMER_DEBUG
+                bsp_LedToggle(LED_RED);
+#endif
+                if (eStatus != MB_ENOERR)
+                {
+                        bsp_println("(%6d) eMBPoll Error: %d", lastToggleTime, eStatus);
+                }
+                lastToggleTime = HAL_GetTick();
+        }
 }
 
 /*
@@ -220,45 +248,95 @@ void bsp_ModbusPoll(void)
 */
 void bsp_ModbusTask(void)
 {
-        if (bsp_GetMsg(&ucMsg)) {
-                switch (ucMsg.MsgCode) {
+        bsp_ModbusPoll();
+}
 
-                /// 03H指令 读保持寄存器
-                case MSG_MODS_03H:
-                        bsp_MB_GetHoldingReg();
+/* ----------------------- Modbus register callback functions ---------------------------------*/
+eMBErrorCode eMBRegInputCB(UCHAR *pucRegBuffer, USHORT usAddress, USHORT usNRegs)
+{
+        UNUSED(pucRegBuffer);
+        UNUSED(usAddress);
+        UNUSED(usNRegs);
+        return MB_ENOREG;
+        // eMBErrorCode eStatus = MB_ENOERR;
+        // int iRegIndex;
+
+        // if ((usAddress >= REG_INPUT_START) && (usAddress + usNRegs <= REG_INPUT_START + REG_INPUT_NREGS)) {
+        //         iRegIndex = (int)(usAddress - usRegInputStart);
+        //         while (usNRegs > 0) {
+        //                 *pucRegBuffer++ = (unsigned char)(usRegInputBuf[iRegIndex] >> 8);
+        //                 *pucRegBuffer++ = (unsigned char)(usRegInputBuf[iRegIndex] & 0xFF);
+        //                 iRegIndex++;
+        //                 usNRegs--;
+        //         }
+        // } else {
+        //         eStatus = MB_ENOREG;
+        // }
+
+        // return eStatus;
+}
+
+eMBErrorCode eMBRegHoldingCB(UCHAR *pucRegBuffer, USHORT usAddress, USHORT usNRegs, eMBRegisterMode eMode)
+{
+        /* 错误状态 */
+        eMBErrorCode eStatus = MB_ENOERR;
+        /* 地址偏移量 */
+        int iRegIndex = 0;
+
+        /* 判断寄存器地址是否在范围内 */
+        if ((usAddress >= REG_HOLDING_START) && (usAddress + usNRegs <= REG_HOLDING_START + REG_HOLDING_NREGS)) {
+                /* 计算地址偏移量 */
+                iRegIndex = (int)(usAddress - REG_HOLDING_START);
+                switch (eMode) {
+                /* 读处理 */
+                case MB_REG_READ:
+                        while (usNRegs > 0) {
+                                /* 赋值高8位 */
+                                *pucRegBuffer++ = (unsigned char)(usRegHoldingBuf[iRegIndex] >> 8);
+                                /* 赋值低8位 */
+                                *pucRegBuffer++ = (unsigned char)(usRegHoldingBuf[iRegIndex] & 0xFF);
+                                /* 地址偏移量加1 */
+                                iRegIndex++;
+                                /* 寄存器长度减1 */
+                                usNRegs--;
+                        }
                         break;
-
-                /// 06H指令 写保持寄存器
-                case MSG_MODS_06H:
-                        bsp_MB_SetHoldingReg(ucMsg.MsgParam);
-                        break;
-
-                default:
+                /* 写处理 */
+                case MB_REG_WRITE:
+                        while (usNRegs > 0) {
+                                /* 先写低8位 */
+                                usRegHoldingBuf[iRegIndex] = *pucRegBuffer++ << 8;
+                                /* 后写高8位 */
+                                usRegHoldingBuf[iRegIndex] |= *pucRegBuffer++;
+                                /* 地址偏移量加1 */
+                                iRegIndex++;
+                                /* 寄存器长度减1 */
+                                usNRegs--;
+                        }
                         break;
                 }
+        } else {
+                eStatus = MB_ENOREG;
         }
+        /* 返回错误状态 */
+        return eStatus;
 }
 
-/*
-********************************************************************************
-*	函 数 名: bsp_MB_GetHoldingReg
-*	功能说明: 更新保持寄存器值(处理03H指令)
-*	形    参：无
-*	返 回 值: 无
-********************************************************************************
-*/
-static void bsp_MB_GetHoldingReg(void)
+eMBErrorCode eMBRegCoilsCB(UCHAR *pucRegBuffer, USHORT usAddress, USHORT usNCoils, eMBRegisterMode eMode)
 {
+        UNUSED(pucRegBuffer);
+        UNUSED(usAddress);
+        UNUSED(usNCoils);
+        UNUSED(eMode);
+
+        return MB_ENOREG;
 }
 
-/*
-********************************************************************************
-*	函 数 名: bsp_MB_SetHoldingReg
-*	功能说明: 设置保持寄存器值(处理06H指令)
-*	形    参：无
-*	返 回 值: 无
-********************************************************************************
-*/
-static void bsp_MB_SetHoldingReg(uint32_t _reg)
+eMBErrorCode eMBRegDiscreteCB(UCHAR *pucRegBuffer, USHORT usAddress, USHORT usNDiscrete)
 {
+        UNUSED(pucRegBuffer);
+        UNUSED(usAddress);
+        UNUSED(usNDiscrete);
+
+        return MB_ENOREG;
 }

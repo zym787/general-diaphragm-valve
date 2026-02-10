@@ -28,7 +28,7 @@
 
 /* 定义用于硬件定时器的TIM 可使用: TIM2 - TIM5 */
 // #define USE_TIM2
-#define USE_TIM3
+// #define USE_TIM3
 //#define USE_TIM4
 
 #ifdef USE_TIM2

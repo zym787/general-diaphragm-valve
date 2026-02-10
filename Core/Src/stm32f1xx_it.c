@@ -57,7 +57,9 @@
 
 /* External variables --------------------------------------------------------*/
 extern TIM_HandleTypeDef htim2;
+extern TIM_HandleTypeDef htim3;
 extern TIM_HandleTypeDef htim4;
+extern UART_HandleTypeDef huart2;
 /* USER CODE BEGIN EV */
 
 /* USER CODE END EV */
@@ -86,7 +88,39 @@ void NMI_Handler(void)
 void HardFault_Handler(void)
 {
   /* USER CODE BEGIN HardFault_IRQn 0 */
-
+  /* LR寄存器自动化分析 */
+  volatile uint32_t lr_value;
+  asm volatile("MOV %0, lr" : "=r"(lr_value));
+  switch(lr_value & 0xF) {
+    case 0x1: 
+      printf("Fault in Handler mode\r\n");
+      break;
+    case 0x9:
+      printf("Fault using MSP\r\n");
+      break;
+    case 0xD:
+      printf("Fault using PSP\r\n");
+      break;
+  }
+  /* PC寄存器自动化分析 */
+  volatile uint32_t stacked_r0, stacked_pc;
+  asm volatile (
+    "TST LR, #4\n\t"
+    "ITE EQ\n\t"
+    "MRSEQ %0, MSP\n\t"
+    "MRSNE %0, PSP\n\t"
+    : "=r" (stacked_r0));
+  
+  stacked_pc = ((uint32_t*)stacked_r0)[6];  // PC位置
+  printf("Fault PC: 0x%08X\r\n", stacked_pc);
+  /* SCB寄存器自动化分析 */
+  uint32_t icsr = SCB->ICSR;  /* 中断控制状态寄存器 */
+  uint32_t cfsr = SCB->CFSR;  /* 可配置错误状态寄存器 */
+  uint32_t hfsr = SCB->HFSR;  /* 硬件错误状态寄存器 */
+  printf("!!! HardFault !!!\r\n");
+  printf("ICSR: 0x%08X\r\n", icsr);
+  printf("CFSR: 0x%08X\r\n", cfsr);
+  printf("HFSR: 0x%08X\r\n", hfsr);
   /* USER CODE END HardFault_IRQn 0 */
   while (1)
   {
@@ -211,7 +245,22 @@ void TIM2_IRQHandler(void)
   HAL_TIM_IRQHandler(&htim2);
   /* USER CODE BEGIN TIM2_IRQn 1 */
         // Stepper_TIM_UpdateCallback(&htim2);  // 调用步进电机处理
+        #if 0
   /* USER CODE END TIM2_IRQn 1 */
+}
+
+/**
+  * @brief This function handles TIM3 global interrupt.
+  */
+void TIM3_IRQHandler(void)
+{
+  /* USER CODE BEGIN TIM3_IRQn 0 */
+
+  /* USER CODE END TIM3_IRQn 0 */
+  HAL_TIM_IRQHandler(&htim3);
+  /* USER CODE BEGIN TIM3_IRQn 1 */
+        #endif
+  /* USER CODE END TIM3_IRQn 1 */
 }
 
 /**
@@ -225,7 +274,22 @@ void TIM4_IRQHandler(void)
   HAL_TIM_IRQHandler(&htim4);
   /* USER CODE BEGIN TIM4_IRQn 1 */
         Stepper_TIM_UpdateCallback(&htim4);  // 调用步进电机处理
+        #if 0
   /* USER CODE END TIM4_IRQn 1 */
+}
+
+/**
+  * @brief This function handles USART2 global interrupt.
+  */
+void USART2_IRQHandler(void)
+{
+  /* USER CODE BEGIN USART2_IRQn 0 */
+
+  /* USER CODE END USART2_IRQn 0 */
+  HAL_UART_IRQHandler(&huart2);
+  /* USER CODE BEGIN USART2_IRQn 1 */
+        #endif
+  /* USER CODE END USART2_IRQn 1 */
 }
 
 /* USER CODE BEGIN 1 */

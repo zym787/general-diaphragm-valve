@@ -47,7 +47,7 @@ void bsp_Init(void)
         bsp_LogPrintfInfo();    /* 显示系统信息 */
 
 #if DEBUG_MB != 2
-        bsp_ModbusInit();   /* 初始化modbus, 485 串口2 */
+        // bsp_ModbusInit();   /* 初始化modbus, 485 串口2 */
 #endif
         
         bsp_println("bsp Init Completed! ");
@@ -95,7 +95,7 @@ void bsp_RunPer10ms(void)
 {
 #if DEBUG_MB != 2
         /* 例如 Modbus 协议，可以插入Modbus轮询函数 */
-        bsp_ModbusPoll();
+        // bsp_ModbusPoll();
 #endif
 }
 

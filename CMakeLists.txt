@@ -58,6 +58,7 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     Bsp/Src/bsp_user_lib.c
     Bsp/Src/bsp_modbus.c
     Bsp/Src/bsp_motor.c
+    Bsp/Src/bsp_addr.c
    
 )
 
@@ -67,6 +68,7 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
 #     Kernal
         Bsp
         Bsp/Inc
+        Bsp/freemodbus_port
 )
 
 # Add project symbols (macros)
@@ -102,15 +104,15 @@ add_source_files(${CMAKE_SOURCE_DIR}/Kernal)
 # set(THREADX_TOOLCHAIN gnu)
 # set(TX_USER_FILE "${CMAKE_CURRENT_LIST_DIR}/UserCfg/tx_user.h")
 
-add_header_dirs(${CMAKE_CURRENT_LIST_DIR}/Middlewares/ST/threadx/common/inc)
-add_source_files(${CMAKE_CURRENT_LIST_DIR}/Middlewares/ST/threadx/common/src)
-add_header_dirs(${CMAKE_CURRENT_LIST_DIR}/Middlewares/ST/threadx/ports/cortex_m3/gnu/inc)
-add_source_files(${CMAKE_CURRENT_LIST_DIR}/Middlewares/ST/threadx/ports/cortex_m3/gnu/src)
+add_header_dirs(${CMAKE_CURRENT_LIST_DIR}/Component/threadx/common/inc)
+add_source_files(${CMAKE_CURRENT_LIST_DIR}/Component/threadx/common/src)
+add_header_dirs(${CMAKE_CURRENT_LIST_DIR}/Component/threadx/ports/cortex_m3/gnu/inc)
+add_source_files(${CMAKE_CURRENT_LIST_DIR}/Component/threadx/ports/cortex_m3/gnu/src)
 # add_header_dirs(${CMAKE_CURRENT_LIST_DIR}/App)
 # add_source_files(${CMAKE_CURRENT_LIST_DIR}/App)
-# add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/Middlewares/ST/threadx)     # 添加子目录
+# add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/Component/threadx)     # 添加子目录
 # 添加threadx子模块存在性检查
-if(EXISTS ${CMAKE_SOURCE_DIR}/Middlewares/ST/threadx)
+if(EXISTS ${CMAKE_SOURCE_DIR}/Component/threadx)
         message("Threadx submodule found!")
 else()
     message(FATAL_ERROR "Threadx submodule missing! Run: git submodule update --init")
@@ -125,10 +127,25 @@ add_source_files(${CMAKE_CURRENT_LIST_DIR}/App)
 # add_source_files(${CMAKE_CURRENT_LIST_DIR}/Bsp)
 
 # modbus支援
-add_header_dirs(${CMAKE_CURRENT_LIST_DIR}/Middlewares/Third_Party/Armfly/modbus)
-add_source_files(${CMAKE_CURRENT_LIST_DIR}/Middlewares/Third_Party/Armfly/modbus)
+# add_header_dirs(${CMAKE_CURRENT_LIST_DIR}/Middlewares/Third_Party/Armfly/modbus)
+# add_source_files(${CMAKE_CURRENT_LIST_DIR}/Middlewares/Third_Party/Armfly/modbus)
 
 # Component支援
 # stepper motor驱动支援
 add_header_dirs(${CMAKE_CURRENT_LIST_DIR}/Component/motor)
 add_source_files(${CMAKE_CURRENT_LIST_DIR}/Component/motor)
+
+# freemodbus支援
+add_header_dirs(${CMAKE_CURRENT_LIST_DIR}/Component/freemodbus/modbus)
+add_header_dirs(${CMAKE_CURRENT_LIST_DIR}/Component/freemodbus/modbus/rtu)
+add_source_files(${CMAKE_CURRENT_LIST_DIR}/Component/freemodbus/modbus)
+add_source_files(${CMAKE_CURRENT_LIST_DIR}/Component/freemodbus/modbus/rtu)
+add_header_dirs(${CMAKE_CURRENT_LIST_DIR}/Bsp/freemodbus_port)
+add_source_files(${CMAKE_CURRENT_LIST_DIR}/Bsp/freemodbus_port)
+# 添加freemodbus子模块存在性检查
+if(EXISTS ${CMAKE_SOURCE_DIR}/Component/freemodbus)
+        message("Freemodbus submodule found!")
+else()
+    message(FATAL_ERROR "Freemodbus submodule missing! Run: git submodule update --init")
+endif()
+

@@ -19,6 +19,7 @@
 #include "stm32f1xx_hal.h"
 #include "tx_api.h"
 #include "bsp.h"
+#include "tim.h"
 
 /********************************************** 任务优先级,数值越小优先级越高 */
 #define APP_CFG_TASK_START_PRIO   2u
@@ -308,17 +309,17 @@ static void AppTaskCreate(void)
         //                  TX_NO_TIME_SLICE,              /* 不开启时间片 */
         //                  TX_AUTO_START);                /* 创建后立即启动 */
 
-        // /**************创建COM任务*********************/
-        // tx_thread_create(&AppTaskCOMTCB,            /* 任务控制块地址 */
-        //                  "App Task COM",            /* 任务名 */
-        //                  AppTaskCOM,                /* 启动任务函数地址 */
-        //                  0,                         /* 传递给任务的参数 */
-        //                  &AppTaskCOMStk[0],         /* 堆栈基地址 */
-        //                  APP_CFG_TASK_COM_STK_SIZE, /* 堆栈空间大小 */
-        //                  APP_CFG_TASK_COM_PRIO,     /* 任务优先级*/
-        //                  APP_CFG_TASK_COM_PRIO,     /* 任务抢占阀值 */
-        //                  TX_NO_TIME_SLICE,          /* 不开启时间片 */
-        //                  TX_AUTO_START);            /* 创建后立即启动 */
+        /**************创建COM任务*********************/
+        tx_thread_create(&AppTaskCOMTCB,            /* 任务控制块地址 */
+                         "App Task COM",            /* 任务名 */
+                         AppTaskCOM,                /* 启动任务函数地址 */
+                         0,                         /* 传递给任务的参数 */
+                         &AppTaskCOMStk[0],         /* 堆栈基地址 */
+                         APP_CFG_TASK_COM_STK_SIZE, /* 堆栈空间大小 */
+                         APP_CFG_TASK_COM_PRIO,     /* 任务优先级*/
+                         APP_CFG_TASK_COM_PRIO,     /* 任务抢占阀值 */
+                         TX_NO_TIME_SLICE,          /* 不开启时间片 */
+                         TX_AUTO_START);            /* 创建后立即启动 */
         /**************创建KEEP任务*********************/
         tx_thread_create(&AppTaskKeepTCB,            /* 任务控制块地址 */
                          "App Task Keep",            /* 任务名 */
@@ -331,19 +332,46 @@ static void AppTaskCreate(void)
                          TX_NO_TIME_SLICE,           /* 不开启时间片 */
                          TX_AUTO_START);             /* 创建后立即启动 */
         /**************创建DEMO任务*********************/
-        tx_thread_create(&AppTaskDemoTCB,            /* 任务控制块地址 */
-                         "App Task Demo",            /* 任务名 */
-                         AppTaskDemo,                /* 启动任务函数地址 */
-                         0,                          /* 传递给任务的参数 */
-                         &AppTaskDemoStk[0],         /* 堆栈基地址 */
-                         APP_CFG_TASK_DEMO_STK_SIZE, /* 堆栈空间大小 */
-                         APP_CFG_TASK_DEMO_PRIO,     /* 任务优先级*/
-                         APP_CFG_TASK_DEMO_PRE_TH,   /* 任务抢占阀值 */
-                         TX_NO_TIME_SLICE,           /* 不开启时间片 */
-                         TX_AUTO_START);             /* 创建后立即启动 */
+        // tx_thread_create(&AppTaskDemoTCB,            /* 任务控制块地址 */
+        //                  "App Task Demo",            /* 任务名 */
+        //                  AppTaskDemo,                /* 启动任务函数地址 */
+        //                  0,                          /* 传递给任务的参数 */
+        //                  &AppTaskDemoStk[0],         /* 堆栈基地址 */
+        //                  APP_CFG_TASK_DEMO_STK_SIZE, /* 堆栈空间大小 */
+        //                  APP_CFG_TASK_DEMO_PRIO,     /* 任务优先级*/
+        //                  APP_CFG_TASK_DEMO_PRE_TH,   /* 任务抢占阀值 */
+        //                  TX_NO_TIME_SLICE,           /* 不开启时间片 */
+        //                  TX_AUTO_START);             /* 创建后立即启动 */
 }
 
 /* 以下定义测试线程  */
+/**
+ * @brief     : 线程2 用于Modbus任务
+ * @param     : thread_input
+ */
+static void AppTaskCOM(ULONG thread_input)
+{
+        UINT status;
+
+        bsp_ModbusInit();
+
+        // HAL_TIM_Base_Start_IT(&htim3);
+        // bsp_LedOn(LED_RED);
+        // bsp_println("Open tim3! for Test");
+
+        while (1)
+        {
+                bsp_ModbusTask();
+
+                _tx_thread_sleep(50);
+
+                /* Check status.  */
+                if (status != TX_SUCCESS)
+                        break;
+        }
+}
+
+
 /**
  * @brief     : 线程0 简单的while-forever-sleep循环
  * @param     : thread_input
@@ -366,6 +394,7 @@ static void AppTaskKeep(ULONG thread_input)
                 // bsp_StartHardTimer(2, uSec, (void *)bsp_LedToggleFlag);
 
                 bsp_LedToggle(LED_GREEN);
+                // bsp_println("Sec:%d", thread_0_counter);
                 _tx_thread_sleep(1000);
 
                 /* Check status.  */

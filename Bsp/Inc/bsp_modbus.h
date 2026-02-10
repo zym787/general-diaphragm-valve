@@ -19,6 +19,12 @@
 #define DEBUG_MB    1   ///是否在串口1输出每次232/485串口接收到的数据
 #define IGNORE_MB   0   ///是否屏蔽Modbus
 
+/* 保持寄存器起始地址 */
+#define REG_HOLDING_START 0x0000
+
+/* 保持寄存器数量(0-199总共200) */
+#define REG_HOLDING_NREGS 10
+
 #define MB_BAUDRATE_SETTING_NUM 5 /* 波特率选项数量(0开始):0 1 2 3 4 */
 
 /* 传递Modbus轮询函数 */
@@ -40,6 +46,8 @@ typedef struct {
 // Modbus寄存器表（外部声明，Modbus核心遍历使用）
 extern const Modbus_Reg_Map_Item_T g_Modbus_Reg_Map[];
 extern const uint16_t g_Modbus_Reg_Map_Count;
+/* 保持寄存器内容 */
+extern uint16_t usRegHoldingBuf[REG_HOLDING_NREGS];
 
 /**
  * @brief     : modbus 波特率枚举

@@ -37,7 +37,7 @@
 /// 是否使用bsp层中断管理
 #define USE_BSP_IRQ   1
 #define UART1_FIFO_EN 1  /// 调试串口
-#define UART2_FIFO_EN 1  /// 485串口
+#define UART2_FIFO_EN 0  /// 485串口
 #define UART3_FIFO_EN 0  /// 串口
 
 /* PB2 控制RS485芯片的发送使能 */

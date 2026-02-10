@@ -57,6 +57,7 @@ extern "C" {
 
 #include "bsp_modbus.h"
 #include "bsp_motor.h"
+#include "bsp_addr.h"
 
 /* 定义 BSP 版本号及修订日期 */
 #define __STM32F1_BSP_VERSION       "v1.3"

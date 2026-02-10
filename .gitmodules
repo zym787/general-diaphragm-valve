@@ -1,3 +1,0 @@
-[submodule "Middlewares/ST/threadx"]
-	path = Middlewares/ST/threadx
-	url = https://github.com/zym787/stm32-mw-threadx.git
