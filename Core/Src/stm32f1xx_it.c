@@ -23,6 +23,9 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "stepper_motor.h"
+#ifndef THREADX_ENABLED
+#include "bsp.h"
+#endif
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -223,6 +226,14 @@ void SysTick_Handler(void)
   /* USER CODE END SysTick_IRQn 0 */
   HAL_IncTick();
   /* USER CODE BEGIN SysTick_IRQn 1 */
+
+  /* bsp初始化前,避免HAL提前打开systick中断引起的异常 */
+  if (bsp_GetSystickISRFlag() == FALSE) {
+          return;
+  }
+  /// 安富莱bsp库软定时器
+  SysTick_ISR(); /* 安富莱bsp库的滴答定时中断服务程序 */
+
 #endif
   /* USER CODE END SysTick_IRQn 1 */
 }

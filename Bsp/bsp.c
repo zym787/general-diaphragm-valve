@@ -16,10 +16,6 @@
 
 #include "bsp.h"
 
-#include "tx_api.h"
-#include "tx_initialize.h"
-#include "tx_thread.h"
-
 
 volatile unsigned long CPU_RunTime = 0UL;
 volatile uint32_t idleCounter = 0UL;
@@ -47,9 +43,9 @@ void bsp_Init(void)
         bsp_LogPrintfInfo();    /* 显示系统信息 */
 
 #if DEBUG_MB != 2
-        // bsp_ModbusInit();   /* 初始化modbus, 485 串口2 */
+        bsp_ModbusInit();   /* 初始化modbus, 485 串口2 */
 #endif
-        
+
         bsp_println("bsp Init Completed! ");
 }
 
@@ -95,7 +91,7 @@ void bsp_RunPer10ms(void)
 {
 #if DEBUG_MB != 2
         /* 例如 Modbus 协议，可以插入Modbus轮询函数 */
-        // bsp_ModbusPoll();
+        bsp_ModbusPoll();
 #endif
 }
 
@@ -138,55 +134,6 @@ void bsp_Idle(void)
 //     bsp_ModbusPoll();
 //     #endif
 }
-
-/*
- *******************************************************************************
- *	函 数 名: HAL_Delay
- *	功能说明: 重定向毫秒延迟函数。替换HAL中的函数。
- *            因为HAL中的缺省函数依赖于Systick中断，如果在USB、SD卡中断中有
- *            延迟函数,则会锁死。也可以通过函数HAL_NVIC_SetPriority提升Systick中断
- *	形    参: 无
- *	返 回 值: 无
- *******************************************************************************
- */
-/* 当前例子使用stm32f1xx_hal.c默认方式实现，未使用下面重定向的函数 */
-#if 1
-void HAL_Delay(uint32_t Delay)
-{
-	bsp_DelayUS(Delay * 1000);
-}
-
-HAL_StatusTypeDef HAL_InitTick(uint32_t TickPriority) { return HAL_OK; }
-
-uint32_t HAL_GetTick(void)
-{
-        static uint32_t ticks = 0U;
-        uint32_t i;
-
-        if (_tx_thread_system_state == TX_INITIALIZE_IS_FINISHED)
-        {
-                return ((uint32_t)_tx_time_get());
-        }
-
-        for (i = (SystemCoreClock  >> 14U); i > 0U; i--)
-        {
-                __NOP();
-                __NOP();
-                __NOP();
-                __NOP();
-                __NOP();
-                __NOP();
-                __NOP();
-                __NOP();
-                __NOP();
-                __NOP();
-                __NOP();
-                __NOP();
-        }
-        return ++ticks;
- }
-
-#endif
 
 void configureTimerForRunTimeStats(void)
 {

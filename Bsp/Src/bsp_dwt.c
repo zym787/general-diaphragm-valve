@@ -47,7 +47,7 @@ void bsp_InitDWT(void)
         DWT_CR |= (unsigned int)DWT_CR_CYCCNTENA;
 }
 
-#if 1  /* bsp_timer.c已经有实现 */
+#ifdef THREADX_ENABLED /* 使用Threadx时使能dwt产生微秒延时,bsp_timer.c已经有实现 */
 /*
 ********************************************************************************
 *	函 数 名: bsp_DelayMS

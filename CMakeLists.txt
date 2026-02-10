@@ -45,9 +45,7 @@ target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE
 # Add sources to executable
 target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user sources here
-#     Kernal/loop.c
-#     Kernal/tx_initialize_low_level.S
-    Kernal/tx_initialize_low_level.S
+#     Kernel/loop.c
     Bsp/bsp.c
     Bsp/Src/bsp_dwt.c
     Bsp/Src/bsp_timer.c
@@ -65,7 +63,7 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
 # Add include paths
 target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user defined include paths
-#     Kernal
+#     Kernel
         Bsp
         Bsp/Inc
         Bsp/freemodbus_port
@@ -74,8 +72,6 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
 # Add project symbols (macros)
 target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user defined symbols
-    TX_INCLUDE_USER_DEFINE_FILE
-    THREADX_ENABLED
     DEBUG_BSP=1
 )
 
@@ -96,27 +92,9 @@ include("cmake/custom_commands.cmake")
 
 # 根据自己添加的代码目录修改
 # 头文件使用add_header_dirs函数添加，源文件使用add_source_files函数添加
-add_header_dirs(${CMAKE_SOURCE_DIR}/Kernal)
-add_source_files(${CMAKE_SOURCE_DIR}/Kernal)
+add_header_dirs(${CMAKE_SOURCE_DIR}/Kernel)
+add_source_files(${CMAKE_SOURCE_DIR}/Kernel)
 
-# threadx支援
-# set(THREADX_ARCH cortex_m3)
-# set(THREADX_TOOLCHAIN gnu)
-# set(TX_USER_FILE "${CMAKE_CURRENT_LIST_DIR}/UserCfg/tx_user.h")
-
-add_header_dirs(${CMAKE_CURRENT_LIST_DIR}/Component/threadx/common/inc)
-add_source_files(${CMAKE_CURRENT_LIST_DIR}/Component/threadx/common/src)
-add_header_dirs(${CMAKE_CURRENT_LIST_DIR}/Component/threadx/ports/cortex_m3/gnu/inc)
-add_source_files(${CMAKE_CURRENT_LIST_DIR}/Component/threadx/ports/cortex_m3/gnu/src)
-# add_header_dirs(${CMAKE_CURRENT_LIST_DIR}/App)
-# add_source_files(${CMAKE_CURRENT_LIST_DIR}/App)
-# add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/Component/threadx)     # 添加子目录
-# 添加threadx子模块存在性检查
-if(EXISTS ${CMAKE_SOURCE_DIR}/Component/threadx)
-        message("Threadx submodule found!")
-else()
-    message(FATAL_ERROR "Threadx submodule missing! Run: git submodule update --init")
-endif()
 
 # app支援
 add_header_dirs(${CMAKE_CURRENT_LIST_DIR}/App)
