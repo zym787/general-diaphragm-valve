@@ -33,8 +33,8 @@
 #define MB_RTU_DEBUG 1 /* 使能RTU调试打印 */
 // #define MB_TIMER_DEBUG
 
-#define ENTER_CRITICAL_SECTION() ENABLE_INT()       /* 使能全局中断 */
-#define EXIT_CRITICAL_SECTION()  DISABLE_INT()      /* 禁止全局中断 */
+#define ENTER_CRITICAL_SECTION() DISABLE_INT()    /* 禁止全局中断 */
+#define EXIT_CRITICAL_SECTION()  ENABLE_INT()     /* 使能全局中断 */
 
 typedef uint8_t BOOL;
 

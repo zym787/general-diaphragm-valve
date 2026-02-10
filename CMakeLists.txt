@@ -73,6 +73,7 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
 target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user defined symbols
     DEBUG_BSP=1
+    STM32_CMAKE
 )
 
 # Remove wrong libob.a library dependency when using cpp files
@@ -115,8 +116,10 @@ add_source_files(${CMAKE_CURRENT_LIST_DIR}/Component/motor)
 
 # freemodbus支援
 add_header_dirs(${CMAKE_CURRENT_LIST_DIR}/Component/freemodbus/modbus)
+add_header_dirs(${CMAKE_CURRENT_LIST_DIR}/Component/freemodbus/modbus/ascii)
 add_header_dirs(${CMAKE_CURRENT_LIST_DIR}/Component/freemodbus/modbus/rtu)
 add_source_files(${CMAKE_CURRENT_LIST_DIR}/Component/freemodbus/modbus)
+add_source_files(${CMAKE_CURRENT_LIST_DIR}/Component/freemodbus/modbus/ascii)
 add_source_files(${CMAKE_CURRENT_LIST_DIR}/Component/freemodbus/modbus/rtu)
 add_header_dirs(${CMAKE_CURRENT_LIST_DIR}/Bsp/freemodbus_port)
 add_source_files(${CMAKE_CURRENT_LIST_DIR}/Bsp/freemodbus_port)

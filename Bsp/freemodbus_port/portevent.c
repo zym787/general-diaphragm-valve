@@ -31,15 +31,15 @@ static BOOL     xEventInQueue;
 BOOL
 xMBPortEventInit( void )
 {
-//     xEventInQueue = FALSE;
+    xEventInQueue = FALSE;
     return TRUE;
 }
 
 BOOL
 xMBPortEventPost( eMBEventType eEvent )
 {
-//     xEventInQueue = TRUE;
-//     eQueuedEvent = eEvent;
+    xEventInQueue = TRUE;
+    eQueuedEvent = eEvent;
     return TRUE;
 }
 
@@ -48,11 +48,11 @@ xMBPortEventGet( eMBEventType * eEvent )
 {
     BOOL            xEventHappened = FALSE;
 
-//     if( xEventInQueue )
-//     {
-//         *eEvent = eQueuedEvent;
-//         xEventInQueue = FALSE;
-//         xEventHappened = TRUE;
-//     }
+    if( xEventInQueue )
+    {
+        *eEvent = eQueuedEvent;
+        xEventInQueue = FALSE;
+        xEventHappened = TRUE;
+    }
     return xEventHappened;
 }

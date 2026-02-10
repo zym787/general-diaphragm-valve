@@ -28,8 +28,8 @@
 #include "mbport.h"
 
 /* ----------------------- static functions ---------------------------------*/
-// static void prvvUARTTxReadyISR( void );
-// static void prvvUARTRxISR( void );
+static void prvvUARTTxReadyISR( void );
+static void prvvUARTRxISR( void );
 
 /* ----------------------- Start implementation -----------------------------*/
 void
@@ -75,16 +75,16 @@ xMBPortSerialPutByte( CHAR ucByte )
         /* Put a byte in the UARTs transmit buffer. This function is called
          * by the protocol stack if pxMBFrameCBTransmitterEmpty( ) has been
          * called. */
-        RS485_TX_EN();
-#if 0
-        huart2.Instance->DR = (ucByte & (uint16_t)0x01FF); // 发送一个字节
-        while (READ_BIT(huart2.Instance->SR, USART_SR_TC) == RESET) {
-                __NOP(); // 等待发送完成
-        }
-#else
-        HAL_UART_Transmit_IT(&huart2, (uint8_t *)&ucByte, 1);
-#endif
-        mb_println("xMBPortSerialPutByte: 0x%02X", ucByte);
+        // RS485_TX_EN();
+        #if 1
+                huart2.Instance->DR = (ucByte & (uint16_t)0x01FF); // 发送一个字节
+                // while (READ_BIT(huart2.Instance->SR, USART_SR_TC) == RESET) {
+                //         __NOP(); // 等待发送完成
+                // }
+        #else
+                HAL_UART_Transmit_IT(&huart2, (uint8_t *)&ucByte, 1);
+        #endif
+        // mb_println("xMBPortSerialPutByte: 0x%02X", ucByte);
         return TRUE;
 }
 
@@ -94,9 +94,9 @@ xMBPortSerialGetByte( CHAR * pucByte )
         /* Return the byte in the UARTs receive buffer. This function is called
          * by the protocol stack after pxMBFrameCBByteReceived( ) has been called.
          */
-        RS485_RX_EN();
+        // RS485_RX_EN();
         *pucByte = (uint16_t)(huart2.Instance->DR & (uint16_t)0x01FF); // 接收一个字节
-        mb_println("xMBPortSerialGetByte: 0x%02X", pucByte[0]);
+        // mb_println("xMBPortSerialGetByte: 0x%02X", pucByte[0]);
         return TRUE;
 }
 
@@ -107,20 +107,20 @@ xMBPortSerialGetByte( CHAR * pucByte )
  * a new character can be sent. The protocol stack will then call 
  * xMBPortSerialPutByte( ) to send the character.
  */
-// static void prvvUARTTxReadyISR( void )
-// {
-//     pxMBFrameCBTransmitterEmpty(  );
-// }
+static void prvvUARTTxReadyISR( void )
+{
+    pxMBFrameCBTransmitterEmpty(  );
+}
 
-// /* Create an interrupt handler for the receive interrupt for your target
-//  * processor. This function should then call pxMBFrameCBByteReceived( ). The
-//  * protocol stack will then call xMBPortSerialGetByte( ) to retrieve the
-//  * character.
-//  */
-// static void prvvUARTRxISR( void )
-// {
-//     pxMBFrameCBByteReceived(  );
-// }
+/* Create an interrupt handler for the receive interrupt for your target
+ * processor. This function should then call pxMBFrameCBByteReceived( ). The
+ * protocol stack will then call xMBPortSerialGetByte( ) to retrieve the
+ * character.
+ */
+static void prvvUARTRxISR( void )
+{
+    pxMBFrameCBByteReceived(  );
+}
 #endif
 
 /**
@@ -130,9 +130,9 @@ xMBPortSerialGetByte( CHAR * pucByte )
  */
 void USART2_IRQHandler(void)
 {
-        HAL_UART_IRQHandler(&huart2);
+        // HAL_UART_IRQHandler(&huart2);
 
-#if 1
+#if 0
         /* Receive interrupt */
         if (READ_BIT(huart2.Instance->SR, USART_SR_RXNE) != RESET) {
 
@@ -158,20 +158,3 @@ void USART2_IRQHandler(void)
         }
 #endif
 }
-
-// 添加HAL库回调函数（在stm32f1xx_hal_uart.c外实现）
-// void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
-// {
-//         if (huart->Instance == USART2) {
-//                 prvvUARTRxISR();
-//                 bsp_LedToggle(LED_RED);
-//         }
-// }
-
-// void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
-// {
-//         if (huart->Instance == USART2) {
-//                 prvvUARTTxReadyISR();
-//                 bsp_LedToggle(LED_GREEN);
-//         }
-// }

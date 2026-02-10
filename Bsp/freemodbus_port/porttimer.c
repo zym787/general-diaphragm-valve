@@ -68,9 +68,12 @@ inline void
 vMBPortTimersEnable(  )
 {
         /* Enable the timer with the timeout passed to xMBPortTimersInit( ) */
+        /* 清零定时器用于下一次计数 */
         __HAL_TIM_SET_COUNTER(&htim3, 0);
+        /* 清中断标志,防止定时器已启动立即进入中断 */
+        __HAL_TIM_CLEAR_FLAG(&htim3, TIM_FLAG_UPDATE);
+        /* 启动定时器 */
         HAL_TIM_Base_Start_IT(&htim3);
-        bsp_LedOn(LED_RED);
 }
 
 inline void
@@ -78,7 +81,6 @@ vMBPortTimersDisable(  )
 {
         /* Disable any pending timers. */
         HAL_TIM_Base_Stop_IT(&htim3);
-        bsp_LedOff(LED_RED);
 }
 
 #if 1
@@ -86,28 +88,20 @@ vMBPortTimersDisable(  )
  * must then call pxMBPortCBTimerExpired( ) to notify the protocol stack that
  * the timer has expired.
  */
-// static void prvvTIMERExpiredISR( void )
-// {
-//     ( void )pxMBPortCBTimerExpired(  );
-// }
-
-void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+static void prvvTIMERExpiredISR( void )
 {
-        if (htim->Instance == TIM3) {
-                bsp_LedToggle(LED_RED);
-                // prvvTIMERExpiredISR(); // 通知协议栈3.5字符超时
-                xMBRTUTimerT35Expired();
-        }
+    ( void )pxMBPortCBTimerExpired(  );
 }
 
 void TIM3_IRQHandler(void)
 {
-        HAL_TIM_IRQHandler(&htim3);
+        // HAL_TIM_IRQHandler(&htim3);
 
-        // if (__HAL_TIM_GET_FLAG(&htim3, TIM_FLAG_UPDATE)) {
-        //         // __HAL_TIM_CLEAR_IT(&htim3, TIM_IT_UPDATE);
-        //         __HAL_TIM_CLEAR_FLAG(&htim3, TIM_FLAG_UPDATE);
-        //         prvvTIMERExpiredISR();
-        // }
+        if (__HAL_TIM_GET_FLAG(&htim3, TIM_FLAG_UPDATE)) {
+                /* 清除中断标志位 */
+                __HAL_TIM_CLEAR_FLAG(&htim3, TIM_FLAG_UPDATE);
+                /* 通知协议栈3.5字符超时 */
+                prvvTIMERExpiredISR();
+        }
 }
 #endif

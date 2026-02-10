@@ -176,8 +176,8 @@ void bsp_ModbusInit(void)
         bsp_println("Init Uart 2 for Modbus!");
 
         /* Initialize Modbus protocol stack */
-        // eStatus = eMBInit(MB_RTU, SLAVE_ID, 0, MB_BAUDRATE, MB_PAR_NONE, UART_STOPBITS_1);
-        eStatus = eMBInit(MB_RTU, addr, 1, MB_BAUDRATE, MB_PAR_NONE, UART_STOPBITS_1);
+        eStatus = eMBInit(MB_RTU, addr, 2, MB_BAUDRATE, MB_PAR_NONE, UART_STOPBITS_1);
+
         bsp_println("Modbus Init Addr: 0x%02X Baud: %d Status: %d", addr, MB_BAUDRATE, eStatus);
 
         /* Initialize register values */
