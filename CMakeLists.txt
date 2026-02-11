@@ -111,8 +111,13 @@ add_source_files(${CMAKE_CURRENT_LIST_DIR}/App)
 
 # Component支援
 # stepper motor驱动支援
-add_header_dirs(${CMAKE_CURRENT_LIST_DIR}/Component/motor)
-add_source_files(${CMAKE_CURRENT_LIST_DIR}/Component/motor)
+# add_header_dirs(${CMAKE_CURRENT_LIST_DIR}/Component/motor)
+# add_source_files(${CMAKE_CURRENT_LIST_DIR}/Component/motor)
+add_header_dirs(${CMAKE_CURRENT_LIST_DIR}/Component/stepper_lib)
+add_source_files(${CMAKE_CURRENT_LIST_DIR}/Component/stepper_lib)
+# CmdParser支援
+add_header_dirs(${CMAKE_CURRENT_LIST_DIR}/Component/cmd_parser)
+add_source_files(${CMAKE_CURRENT_LIST_DIR}/Component/cmd_parser)
 
 # freemodbus支援
 add_header_dirs(${CMAKE_CURRENT_LIST_DIR}/Component/freemodbus/modbus)

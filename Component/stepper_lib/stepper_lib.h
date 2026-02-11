@@ -1,0 +1,108 @@
+/*
+ * stepper_lib.h
+ * 步进电机驱动库头文件
+ */
+
+#ifndef STEPPER_LIB_H
+#define STEPPER_LIB_H
+
+#include "main.h"
+#include "bsp.h"
+#include <stdint.h>
+#include <stdlib.h>
+
+#define STEPPER_DEBUG 1
+
+#if STEPPER_DEBUG == 1
+#define sl_println(format, ...)                                                \
+        printf("[%20s:%4d]STEP(%6d) " format "\r\n", FILE_NAME2, __LINE__,     \
+               HAL_GetTick(), ##__VA_ARGS__)
+#define sl_printf(format, ...)                                                 \
+        printf("[%20s:%4d]STEP(%6d) " format, FILE_NAME2, __LINE__,            \
+               HAL_GetTick(), ##__VA_ARGS__)
+#else
+#define sl_println(format, ...)
+#define sl_printf(format, ...)
+#endif
+
+typedef enum {
+        STEPPER_DISABLE = 0, /* 电机禁用 */
+        STEPPER_ENABLE = 1,  /* 电机使能 */
+} STEPPER_ENABLE_E;
+
+typedef enum {
+        STEPPER_DIR_CW = 0,  /* 顺时针 */
+        STEPPER_DIR_CCW = 1, /* 逆时针 */
+} STEPPER_DIR_E;
+
+typedef enum {
+        STEPPER_ENA_ACT_LOW = 0,  /* 使能信号低电平有效 */
+        STEPPER_ENA_ACT_HIGH = 1, /* 使能信号高电平有效 */
+} STEPPER_ENA_ACT_E;
+
+typedef enum {
+        STEPPER_NOPOSITION = 0, /* 电机未到达目标位置 */
+        STEPPER_INPOSITION = 1, /* 电机已到达目标位置 */
+} STEPPER_RUN_E;
+
+typedef enum {
+        PLUSE_LOW = 0,  /* 脉冲低电平 */
+        PLUSE_HIGH = 1, /* 脉冲高电平 */
+} STEPPER_PULSE_E;
+
+// 最大电机数量
+#define MAX_MOTORS 4
+/**
+ * @brief     : 电机索引枚举
+ */
+typedef enum {
+        STEPPER_1 = 0,
+        STEPPER_2 = 1,
+        STEPPER_3 = 2,
+        STEPPER_4 = 3,
+        STEPPER_MAX
+} STEPPER_INDEX_E;
+
+#define MINIMUM_TIME_INTERVAL 2500 /* 最小时间间隔,单位微秒 */
+#define DEFAULT_STEP_PER_S    10   /* 默认速度 10step/s */
+#define MIN_STEP_PER_S        1    /* 最小速度 1step/s */
+#define MAX_STEP_PER_S        4000 /* 最大速度 4000step/s */
+
+// 电机控制结构体
+typedef struct {
+        GPIO_TypeDef *step_port;   /* 步进脉冲GPIO端口 */
+        uint16_t step_pin;         /* 步进脉冲GPIO引脚 */
+        GPIO_TypeDef *dir_port;    /* 方向控制GPIO端口 */
+        uint16_t dir_pin;          /* 方向控制GPIO引脚 */
+        GPIO_TypeDef *enable_port; /* 使能控制GPIO端口 */
+        uint16_t enable_pin;       /* 使能控制GPIO引脚 */
+        int32_t target_pos;        /* 目标位置 */
+        int32_t current_pos;       /* 当前位置 */
+        int32_t remaining_steps;   /* 剩余步数 */
+        STEPPER_DIR_E direction;   /* 方向: 0=正转, 1=反转 */
+        uint32_t step_per_s;       /* 当前脉冲间隔(微秒) */
+        uint32_t max_step_per_s;   /* 最小脉冲间隔(对应最高速度) */
+        uint32_t min_step_per_s;   /* 最大脉冲间隔(对应最低速度) */
+        bool is_added;             /* 是否添加到电机列表: 1=已添加, 0=未添加 */
+        STEPPER_ENA_ACT_E
+        en_active_high; /* 使能信号有效电平: 1=高电平有效, 0=低电平有效 */
+} stepper_motor_t;
+
+// 函数声明
+void stepper_init(void);
+int8_t stepper_add_motor(uint8_t _index, GPIO_TypeDef *_step_port,
+                         uint16_t _step_pin, GPIO_TypeDef *_dir_port,
+                         uint16_t _dir_pin, GPIO_TypeDef *_enable_port,
+                         uint16_t _enable_pin, uint8_t _en_active_high);
+void stepper_set_target_position(uint8_t _index, int32_t _position,
+                                 uint32_t _speed);
+void stepper_set_speed_range(uint8_t _index, uint32_t _min_speed,
+                             uint32_t _max_speed);
+int32_t stepper_get_position(uint8_t _index);
+uint8_t stepper_is_finished(uint8_t _index);
+void stepper_enable_motor(uint8_t _index, STEPPER_ENABLE_E _enable);
+void stepper_set_direction(uint8_t _index, STEPPER_DIR_E _direction);
+void stepper_stop_all(void);
+extern void stepper_timer_callback(void);
+
+#endif /* STEPPER_LIB_H */

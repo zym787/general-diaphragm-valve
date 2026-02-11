@@ -1,10 +1,42 @@
 #include "bsp.h"
 
 #include "tim.h"
+#include "cmd_parser.h"
+
+#define MOTOR_LIB 2
+
+#if MOTOR_LIB == 1
 #include "stepper_motor.h"
+#elif MOTOR_LIB == 2
+#include "stepper_lib.h"
+#endif
+
+/**
+ * @brief     : 处理电机任务
+ */
+void bsp_MotorTask(void)
+{
+        CmdParser_ExecuteIfReady();
+}
+
+/**
+ * @brief     : 处理电机命令解析任务
+ */
+void bsp_MotorCmdTask(void)
+{
+        uint8_t cmd;
+        /* 从串口读入一个字符(非阻塞方式) */
+        if (comGetChar(COM1, &cmd)) {
+                CmdParser_ProcessChar(cmd);
+        }
+}
+
+#if MOTOR_LIB == 1
 
 // 定义步进电机实例
 StepperMotor_t myStepper;
+
+void bsp_MotorMenu(void);
 
 // 位置到达回调函数
 void PositionReachedCallback(void)
@@ -15,9 +47,8 @@ void PositionReachedCallback(void)
 // 错误回调函数
 void ErrorCallback(uint8_t error_code)
 {
-       bsp_println("电机错误：%d", error_code);
+        bsp_println("电机错误：%d", error_code);
 }
-
 
 void bsp_MotorInit(void)
 {
@@ -42,15 +73,19 @@ void bsp_MotorInit(void)
         myStepper.error_cb = ErrorCallback;
         // 使能电机
         Stepper_Enable(&myStepper);
+
+        // bsp_MotorMenu();
+        CmdParser_Init();
 }
 
-void bsp_MotorTask(void)
+void bsp_MotorMenu(void)
 {
-        // HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_4);
-        // HAL_Delay(1000);
-        // HAL_TIM_PWM_Stop(&htim4, TIM_CHANNEL_4);
-        // return;
-        bsp_MotorControl();
+        BSP_Printf("\r\n------------------------------------------------\r\n");
+        BSP_Printf("请选择操作命令:\r\n");
+        BSP_Printf("1 - 移动到位置1000步\r\n");
+        BSP_Printf("2 - 反向移动500步\r\n");
+        BSP_Printf("3 - 速度模式运行\r\n");
+        BSP_Printf("4 - S曲线加减速移动到位置2000\r\n");
 }
 
 void bsp_MotorControl(void)
@@ -58,65 +93,99 @@ void bsp_MotorControl(void)
         uint8_t cmd;
         /* 从串口读入一个字符(非阻塞方式) */
         if (comGetChar(COM1, &cmd)) {
-                switch (cmd) {
-                case '1':
-                        BSP_Printf("\r\n【1 - 移动到位置1000步】\r\n");
-                        // 示例1：位置控制
-                        bsp_println("1 移动到位置1000步\r\n");
-                        Stepper_MoveTo(&myStepper, 1000);
-                        while (Stepper_IsMoving(&myStepper)) {
-                                // 等待移动完成
-                        }
+                CmdParser_ProcessChar(cmd);
+                // bsp_println("COM1: %c", cmd);
+                // switch (cmd) {
+                // case '1':
+                //         BSP_Printf("\r\n【1 - 移动到位置1000步】\r\n");
+                //         // 示例1：位置控制
+                //         bsp_println("1 移动到位置1000步\r\n");
+                //         // Stepper_MoveTo(&myStepper, 1000);
+                //         // while (Stepper_IsMoving(&myStepper)) {
+                //         //         // 等待移动完成
+                //         // }
 
-                        break;
+                //         break;
 
-                case '2':
-                        BSP_Printf("\r\n【2 - 反向移动500步】\r\n");
-                        // 示例2：相对移动
-                        bsp_println("2 反向移动500步\r\n");
-                        Stepper_Move(&myStepper, -500);
-                        while (Stepper_IsMoving(&myStepper)) {
-                                // 显示当前位置
-                                bsp_println("当前位置：%ld\r\n", Stepper_GetPosition(&myStepper));
-                                HAL_Delay(100);
-                        }
-                        break;
+                // case '2':
+                //         BSP_Printf("\r\n【2 - 反向移动500步】\r\n");
+                //         // 示例2：相对移动
+                //         bsp_println("2 反向移动500步\r\n");
+                //         // Stepper_Move(&myStepper, -500);
+                //         // while (Stepper_IsMoving(&myStepper)) {
+                //         //         // 显示当前位置
+                //         //         bsp_println("当前位置：%ld\r\n", Stepper_GetPosition(&myStepper));
+                //         //         HAL_Delay(100);
+                //         // }
+                //         break;
 
-                case '3':
-                        BSP_Printf("\r\n【3 - 速度模式运行】\r\n");
-                        // 示例3：速度控制
-                        bsp_println("3 速度模式运行\r\n");
-                        Stepper_SetSpeed(&myStepper, 300); // 300步/秒
-                        Stepper_Run(&myStepper, true);     // 顺时针运行
+                // case '3':
+                //         BSP_Printf("\r\n【3 - 速度模式运行】\r\n");
+                //         // 示例3：速度控制
+                //         bsp_println("3 速度模式运行\r\n");
+                //         // Stepper_SetSpeed(&myStepper, 300); // 300步/秒
+                //         // Stepper_Run(&myStepper, true);     // 顺时针运行
 
-                        // 运行5秒后停止
-                        HAL_Delay(5000);
-                        Stepper_Stop(&myStepper);
-                        break;
+                //         // // 运行5秒后停止
+                //         // HAL_Delay(5000);
+                //         // Stepper_Stop(&myStepper);
+                //         break;
 
-                case '4':
-                        BSP_Printf("\r\n【4 - S曲线加减速移动到位置2000】\r\n");
-                        // 示例4：设置不同加减速曲线
-                        Stepper_SetAccelProfile(&myStepper, S_CURVE);
-                        Stepper_SetAcceleration(&myStepper, 200);
-                        Stepper_SetDeceleration(&myStepper, 200);
+                // case '4':
+                //         BSP_Printf("\r\n【4 - S曲线加减速移动到位置2000】\r\n");
+                //         // 示例4：设置不同加减速曲线
+                //         Stepper_SetAccelProfile(&myStepper, S_CURVE);
+                //         Stepper_SetAcceleration(&myStepper, 200);
+                //         Stepper_SetDeceleration(&myStepper, 200);
 
-                        bsp_println("4 S曲线加减速移动到位置2000\r\n");
-                        Stepper_MoveTo(&myStepper, 2000);
-                        while (Stepper_IsMoving(&myStepper)) {
-                                bsp_println("速度：%.1f 步/秒\r\n", Stepper_GetSpeed(&myStepper));
-                                HAL_Delay(300);
-                        }
-                        break;
+                //         bsp_println("4 S曲线加减速移动到位置2000\r\n");
+                //         // Stepper_MoveTo(&myStepper, 2000);
+                //         // while (Stepper_IsMoving(&myStepper)) {
+                //         //         bsp_println("速度：%.1f 步/秒\r\n", Stepper_GetSpeed(&myStepper));
+                //         //         HAL_Delay(300);
+                //         // }
+                //         break;
 
-                default:
-                        BSP_Printf("\r\n------------------------------------------------\r\n");
-                        BSP_Printf("请选择操作命令:\r\n");
-                        BSP_Printf("1 - 移动到位置1000步\r\n");
-                        BSP_Printf("2 - 反向移动500步\r\n");
-                        BSP_Printf("3 - 速度模式运行\r\n");
-                        BSP_Printf("4 - S曲线加减速移动到位置2000\r\n");
-                        break;
-                }
+                // default:
+                //         bsp_MotorMenu();
+                //         break;
+                // }
+        } else {
+                // CmdParser_ExecuteIfReady();
         }
 }
+
+#elif MOTOR_LIB == 2
+
+void bsp_MotorInit(void)
+{
+        CmdParser_Init();
+
+        bsp_println("Init Cmd Parser!");
+
+        // 初始化步进电机库
+        stepper_init();
+
+        bsp_println("Init Stepper Motor Driver!");
+
+        // stepper_add_motor(0, LED2_R_GPIO_Port, LED2_R_Pin, DIR1_GPIO_Port, DIR1_Pin, ENA1_GPIO_Port, ENA1_Pin, 1);
+        // 添加四个步进电机 (包含使能引脚)
+        stepper_add_motor(0, STEP1_GPIO_Port, STEP1_Pin, DIR1_GPIO_Port,
+                          DIR1_Pin, ENA1_GPIO_Port, ENA1_Pin,
+                          0); // 使能信号低电平有效
+        stepper_add_motor(1, STEP2_GPIO_Port, STEP2_Pin, DIR2_GPIO_Port,
+                          DIR2_Pin, ENA2_GPIO_Port, ENA2_Pin, 0);
+        stepper_add_motor(2, STEP3_GPIO_Port, STEP3_Pin, DIR3_GPIO_Port, DIR3_Pin, ENA3_GPIO_Port, ENA3_Pin, 0);
+        stepper_add_motor(3, STEP4_GPIO_Port, STEP4_Pin, DIR4_GPIO_Port, DIR4_Pin, ENA4_GPIO_Port, ENA4_Pin, 0);
+}
+
+void bsp_MotorControlTask(void)
+{
+        // 启动电机运动
+        // stepper_set_target_position(0, 5000, 500);  // 第1个电机走1000步，速度500步/秒
+        // stepper_set_target_position(1, -500, 250.0f);  // 第2个电机反向走500步，速度250步/秒
+        // stepper_set_target_position(2, 2000, 800.0f);  // 第3个电机走2000步，速度800步/秒
+        // stepper_set_target_position(3, -1500, 600.0f); // 第4个电机反向走1500步，速度600步/秒
+}
+
+#endif

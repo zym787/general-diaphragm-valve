@@ -24,15 +24,11 @@
 
 /* 任务抢占阈值,高于此值的任务才允许抢占 如果该值等于任务优先级,则禁用抢占阈值 */
 
-
 /******************************************************** 任务栈大小,单位字节 */
-
 
 /*********************************************** 静态变量: 任务启动线程控制块 */
 
-
 /******************************************************************* 函数声明 */
-
 
 /******************************************************************* 变量声明 */
 // static TX_MUTEX AppPrintfSemp; /* 用于printf互斥 */
@@ -47,14 +43,14 @@
  */
 void kernel_TaskStart(void)
 {
-        /// 任务1  参数校验进程 501ms 1.9Hz
+        /// 任务1  保活进程 1001ms 0.999Hz
         bsp_StartAutoTimer(TASK_INDEX_1, 1001);
 
-        // /// 任务2  按键解析进程 50ms 20Hz
-        // bsp_StartAutoTimer(TASK_INDEX_2, 31);
+        /// 任务2  电机命令进程 51ms 19.99Hz
+        bsp_StartAutoTimer(TASK_INDEX_2, 51);
 
-        // /// 任务3  app进程 500ms
-        // bsp_StartAutoTimer(TASK_INDEX_3, 43);
+        /// 任务3  电机命令执行进程 43ms
+        bsp_StartAutoTimer(TASK_INDEX_3, 43);
 
         // /// 任务4  Modbus解析进程 30ms
         // bsp_StartAutoTimer(TASK_INDEX_4, 1021);
@@ -92,6 +88,8 @@ void loop(void)
 
         bsp_println("Start Task Scheduling");
 
+        bsp_MotorControlTask();
+
         /* Infinite FOR Circulation */
         for (;;) {
                 /// 实时进程
@@ -99,15 +97,17 @@ void loop(void)
 
                 /* 任务1 */
                 if (bsp_CheckTimer(TASK_INDEX_1)) {
-                        bsp_LedToggle(LED_GREEN);
+                        // bsp_LedToggle(LED_GREEN);
                 }
 
                 /* 任务2 */
                 if (bsp_CheckTimer(TASK_INDEX_2)) {
+                        bsp_MotorCmdTask();
                 }
 
                 /* 任务3 */
                 if (bsp_CheckTimer(TASK_INDEX_3)) {
+                        bsp_MotorTask();
                 }
 
                 /* 任务4 */
@@ -123,4 +123,3 @@ void loop(void)
                 }
         }
 }
-

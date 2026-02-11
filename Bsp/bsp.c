@@ -30,7 +30,7 @@ volatile uint32_t idleCounter = 0UL;
 */
 void bsp_Init(void)
 {
-        bsp_InitDWT(); /* 初始化DWT */
+        // bsp_InitDWT(); /* 初始化DWT */
         /* ↓可以使用bsp_DelayMS和bsp_DelayUS函数 */
 
         /* ↑---------------------------- 注意 ! ----------------------------↑ */
@@ -45,6 +45,7 @@ void bsp_Init(void)
 #if DEBUG_MB != 2
         bsp_ModbusInit();   /* 初始化modbus, 485 串口2 */
 #endif
+        bsp_MotorInit(); /* 初始化电机 */
 
         bsp_println("bsp Init Completed! ");
 }

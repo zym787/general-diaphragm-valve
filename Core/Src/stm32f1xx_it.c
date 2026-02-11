@@ -22,7 +22,7 @@
 #include "stm32f1xx_it.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "stepper_motor.h"
+// #include "stepper_motor.h"
 #ifndef THREADX_ENABLED
 #include "bsp.h"
 #endif
@@ -235,6 +235,7 @@ void SysTick_Handler(void)
   SysTick_ISR(); /* 安富莱bsp库的滴答定时中断服务程序 */
 
 #endif
+#if 0
   /* USER CODE END SysTick_IRQn 1 */
 }
 
@@ -256,7 +257,6 @@ void TIM2_IRQHandler(void)
   HAL_TIM_IRQHandler(&htim2);
   /* USER CODE BEGIN TIM2_IRQn 1 */
         // Stepper_TIM_UpdateCallback(&htim2);  // 调用步进电机处理
-        #if 0
   /* USER CODE END TIM2_IRQn 1 */
 }
 
@@ -270,7 +270,7 @@ void TIM3_IRQHandler(void)
   /* USER CODE END TIM3_IRQn 0 */
   HAL_TIM_IRQHandler(&htim3);
   /* USER CODE BEGIN TIM3_IRQn 1 */
-        #endif
+// #endif
   /* USER CODE END TIM3_IRQn 1 */
 }
 
@@ -285,7 +285,7 @@ void TIM4_IRQHandler(void)
   HAL_TIM_IRQHandler(&htim4);
   /* USER CODE BEGIN TIM4_IRQn 1 */
         Stepper_TIM_UpdateCallback(&htim4);  // 调用步进电机处理
-        #if 0
+        // #if 0
   /* USER CODE END TIM4_IRQn 1 */
 }
 

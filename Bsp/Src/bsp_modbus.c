@@ -182,14 +182,14 @@ void bsp_ModbusInit(void)
 
         /* Initialize register values */
         usRegHoldingBuf[0] = 0; /* Initialize counter */
-        usRegHoldingBuf[1] = 10;
-        usRegHoldingBuf[2] = 20;
+        usRegHoldingBuf[1] = 111;
+        usRegHoldingBuf[2] = 65111;
         usRegHoldingBuf[3] = 30;
-        usRegHoldingBuf[4] = 40;
-        usRegHoldingBuf[5] = 50;
-        usRegHoldingBuf[6] = 60;
-        usRegHoldingBuf[7] = 70;
-        usRegHoldingBuf[8] = 80;
+        usRegHoldingBuf[4] = 11140;
+        usRegHoldingBuf[5] = 5555;
+        usRegHoldingBuf[6] = 0;
+        usRegHoldingBuf[7] = 65335;
+        usRegHoldingBuf[8] = 32222;
         usRegHoldingBuf[9] = 90;
 
         /* Enable Modbus protocol stack */
